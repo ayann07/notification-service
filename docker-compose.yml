@@ -1,0 +1,61 @@
+version: '3.8'
+# This just tells Docker which version of the rulebook to follow when reading this file.
+
+# This is the main section. Everything listed under here is a separate "container" (a mini virtual machine) that Docker is going to build.
+services:
+  # 1. PostgreSQL - The persistent storage
+  postgres:
+    image: postgres:15-alpine
+    container_name: notification-postgres
+    # We are just giving it a friendly name so you can easily spot it when you check your running containers.
+    ports:
+      - "5432:5432"
+    # This is a bridge. It maps Port 5432 on your Mac to Port 5432 inside the container. This means your Spring Boot app can connect to the database just by calling localhost:5432.
+    environment:
+      POSTGRES_DB: notification_db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    # These are the exact credentials Docker will use to create your database the very first time it boots up. (Username: admin, Password: admin, Database name: notification_db).
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # This is crucial. Containers are designed to be temporary. If you delete the container, you lose all the data inside it. A "volume" is like plugging an external hard drive into the container. It saves the actual database files on your Mac, so if the container crashes or you restart it, your data is still there.
+    # 2. Redis - Pub/Sub & Caching
+  redis:
+    image: redis:7-alpine
+    container_name: notification-redis
+    ports:
+      - "6379:6379"
+    # Just like Postgres, this opens door 6379 so your Spring Boot app can talk to Redis.
+    # 3. Zookeeper - Required to manage Kafka
+  zookeeper:
+    # Kafka is incredibly powerful, but it can't run on its own. It needs a "manager" to keep track of its settings and make sure it doesn't crash.
+    image: confluentinc/cp-zookeeper:7.5.0
+    # Downloads the official Zookeeper image from Confluent (the company behind Kafka).
+    container_name: notification-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    # These variables tell Zookeeper to run on port 2181 and set its internal clock (TICK_TIME).
+
+    # 4. Kafka - The Event Broker
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: notification-kafka
+    depends_on:
+      - zookeeper
+    # This tells Docker, "Do not start Kafka until Zookeeper is fully running."
+    ports:
+      - "9092:9092"
+    # This opens port 9092. Your Spring Boot application will push events to localhost:9092.
+    environment:
+      KAFKA_BROKER_ID: 1
+      # Gives this specific Kafka machine an ID (useful if you had multiple Kafka machines running together).
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # Tells Kafka exactly how to talk to its manager (Zookeeper).
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      # This is a critical networking setting. It tells Kafka to broadcast itself to your Spring Boot app so the app knows exactly where to send the messages.
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+volumes:
+  # This formally creates the "external hard drive" we mentioned in the PostgreSQL section so Docker knows it exists.
+  postgres_data:

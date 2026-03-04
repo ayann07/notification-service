@@ -22,6 +22,7 @@ public class NotificationProcessingService {
     private final NotificationRepository notificationRepository;
     private final NotificationTemplateRepository templateRepository;
     private final NotificationPreferenceRepository preferenceRepository;
+    private final DeliveryManagerService deliveryManager;
 
     public void process(NotificationEvent event) {
         log.info("processing event : {}", event.getCorrelationId());
@@ -72,8 +73,7 @@ public class NotificationProcessingService {
             notificationRepository.save(notification);
             log.info("Saved PENDING notification for User: {} via Channel: {}", event.getUserId(), channel);
 
-            // NOTE: In the next step, we will trigger the actual Email/SMS delivery here!
-
+            deliveryManager.dispatch(notification);
         }
     }
 

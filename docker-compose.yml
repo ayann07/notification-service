@@ -6,6 +6,7 @@ services:
   # 1. PostgreSQL - The persistent storage
   postgres:
     image: postgres:15-alpine
+    restart: unless-stopped
     container_name: notification-postgres
     # We are just giving it a friendly name so you can easily spot it when you check your running containers.
     ports:
@@ -22,6 +23,7 @@ services:
     # 2. Redis - Pub/Sub & Caching
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     container_name: notification-redis
     ports:
       - "6379:6379"
@@ -40,6 +42,7 @@ services:
     # 4. Kafka - The Event Broker
   kafka:
     image: confluentinc/cp-kafka:7.5.0
+    restart: unless-stopped
     container_name: notification-kafka
     depends_on:
       - zookeeper

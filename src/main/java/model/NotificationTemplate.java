@@ -3,11 +3,11 @@ package model;
 import java.util.List;
 import java.util.UUID;
 
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
-import org.hibernate.annotations.Type;
+import org.hibernate.type.SqlTypes;
 
-import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -51,7 +51,7 @@ public class NotificationTemplate extends BaseEntity {
     @Column(name = "body_template", columnDefinition = "TEXT", nullable = false)
     private String bodyTemplate;
 
-    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "default_channels", columnDefinition = "jsonb")
     @Builder.Default
     private List<String> defaultChannels = List.of("IN_APP");

@@ -1,11 +1,12 @@
 package model;
 
-import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.*;
 import lombok.*;
+
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
-import org.hibernate.annotations.Type;
+import org.hibernate.type.SqlTypes;
 
 import java.util.List;
 import java.util.UUID;
@@ -27,12 +28,12 @@ public class NotificationPreference extends BaseEntity {
     @Column(name = "user_id")
     private UUID userId;
 
-    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "muted_channels", columnDefinition = "jsonb")
     @Builder.Default
     private List<String> mutedChannels = List.of();
 
-    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     // When saving to the DB: It takes your Java List<String> ["PROMO", "DIGEST"]
     // and serializes it into a JSON string ["PROMO", "DIGEST"] so PostgreSQL can
     // store it in the jsonb column.

@@ -4,11 +4,11 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
 
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
-import org.hibernate.annotations.Type;
+import org.hibernate.type.SqlTypes;
 
-import io.hypersistence.utils.hibernate.type.json.JsonType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -92,7 +92,7 @@ public class Notification extends BaseEntity {
     // string: "Hello Ayan, your payment failed."
 
     // Hypersistence Utils maps the PostgreSQL JSONB directly to a Java Map
-    @Type(JsonType.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     @Builder.Default
     private Map<String, Object> metadata = Map.of();

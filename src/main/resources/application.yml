@@ -53,3 +53,10 @@ spring:
     redis:
       host: localhost
       port: 6379
+  
+aws:
+  ses:
+    region: ap-south-1
+    access-key: ${AWS_ACCESS_KEY}
+    secret-key: ${AWS_SECRET_KEY}
+    from-email: ${AWS_VERIFIED_EMAIL}

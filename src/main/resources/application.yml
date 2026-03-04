@@ -24,14 +24,27 @@ spring:
   # 3. Kafka Connection
   kafka:
     bootstrap-servers: localhost:9092
+    # What it is: The IP address and port where your Kafka broker is running. 9092 is the default port for Kafka.
+    # It is called bootstap servers because in prod, we will have 3-4 different ips listed down,If the first IP is down, Spring Boot uses this list to "bootstrap" or find another surviving machine to connect to.
     consumer:
       group-id: notification-group
-      auto-offset-reset: earliest # If the app crashes, it reads unread messages from the beginning
+    #   What it is: The "team name" for your application.
+    # This is the secret to Horizontal Scaling. If Amazon Prime Day hits and you need to spin up 5 identical copies of your Notification Service to handle the load, Kafka uses this group-id to load-balance. Because all 5 servers share the same group-id, Kafka knows they are on the same team. It guarantees that a single "PAYMENT_FAILED" event is only given to one of the servers. Without this, all 5 servers would read the same message, and the user would get 5 identical emails!
+      auto-offset-reset: earliest 
+    #   Kafka keeps a "bookmark" (called an offset) of the last message your app read. But what if your app crashes on Friday, you spin up a brand new server on Monday, and the bookmark is lost?
+    # If you set this to latest: The new server starts reading from right now. All the messages from the weekend are permanently ignored.
+    # If you set this to earliest: The server says, "I lost my bookmark, so start me from the very oldest unread message in the queue." It processes the weekend backlog, ensuring zero data loss.
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+    # What it is: The incoming Translators (Network Bytes => Java).
+    # Kafka does not know what a String or a JSON object is. Kafka only stores raw 1s and 0s (byte arrays). When those bytes arrive at your Spring Boot app, you need translators.
+    # The key (usually the userId) is translated back into a simple Java String.
+    # The value (the actual payload) is passed to the JsonDeserializer, which smartly converts it into your NotificationEvent.java DTO.
     producer:
+    # The outgoing Translators (Java => Network Bytes).
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    #   This is the exact reverse of the Consumer. Even though your Notification Service is mostly reading from Kafka, sometimes it needs to send messages back (like sending a NOTIFICATION_FAILED event back to the Order Service). When your Java code tries to send an object, these serializers crush your Java objects down into raw 1s and 0s so they can travel across the network.
     properties:
       spring.json.trusted.packages: "*" # Allows Kafka to read our custom JSON objects
 

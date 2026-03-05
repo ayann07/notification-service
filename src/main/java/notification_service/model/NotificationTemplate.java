@@ -1,4 +1,4 @@
-package model;
+package notification_service.model;
 
 import java.util.List;
 import java.util.UUID;
@@ -45,11 +45,11 @@ public class NotificationTemplate extends BaseEntity {
     // 'ORDER_SHIPPED'. It must be unique so the database knows exactly which single
     // template to grab.
 
-    @Column(name = "title_template", nullable = false)
-    private String titleTemplate;
+    @Column(name = "title", nullable = false)
+    private String title;
 
-    @Column(name = "body_template", columnDefinition = "TEXT", nullable = false)
-    private String bodyTemplate;
+    @Column(name = "body", columnDefinition = "TEXT", nullable = false)
+    private String body;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "default_channels", columnDefinition = "jsonb")

@@ -1,14 +1,14 @@
-package service;
+package notification_service.service;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
-import delivery.ChannelSender;
 import lombok.extern.slf4j.Slf4j;
-import model.Notification;
-import repository.NotificationRepository;
+import notification_service.delivery.ChannelSender;
+import notification_service.model.Notification;
+import notification_service.repository.NotificationRepository;
 
 @Slf4j
 @Service

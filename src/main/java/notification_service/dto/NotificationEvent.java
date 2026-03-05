@@ -1,4 +1,4 @@
-package dto;
+package notification_service.dto;
 
 import java.util.Map;
 import java.util.UUID;

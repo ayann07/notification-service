@@ -1,4 +1,4 @@
-package model;
+package notification_service.model;
 
 import java.util.UUID;
 

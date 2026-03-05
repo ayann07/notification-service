@@ -1,4 +1,4 @@
-package model;
+package notification_service.model;
 
 import jakarta.persistence.*;
 import lombok.*;

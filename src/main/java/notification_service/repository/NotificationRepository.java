@@ -1,9 +1,11 @@
-package repository;
+package notification_service.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
+import notification_service.model.Notification;
+
 import java.util.*;
-import model.Notification;
 
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {

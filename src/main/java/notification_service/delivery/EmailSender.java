@@ -1,11 +1,11 @@
-package delivery;
+package notification_service.delivery;
 
 import org.springframework.stereotype.Service;
 
 import org.springframework.beans.factory.annotation.Value;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import model.Notification;
+import notification_service.model.Notification;
 import software.amazon.awssdk.services.ses.SesClient;
 import software.amazon.awssdk.services.ses.model.SendEmailRequest;
 import software.amazon.awssdk.services.ses.model.SendEmailResponse;

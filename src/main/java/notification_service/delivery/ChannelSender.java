@@ -1,6 +1,6 @@
-package delivery;
+package notification_service.delivery;
 
-import model.Notification;
+import notification_service.model.Notification;
 
 public interface ChannelSender {
 

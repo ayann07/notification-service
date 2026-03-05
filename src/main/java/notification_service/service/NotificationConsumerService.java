@@ -1,11 +1,11 @@
-package service;
+package notification_service.service;
 
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
-import dto.NotificationEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import notification_service.dto.NotificationEvent;
 
 @Slf4j
 // @Slf4j: This is just a shortcut so you don't have to write Logger logger =
@@ -16,6 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 // of this class and keep it alive in the background permanently."
 @RequiredArgsConstructor
 public class NotificationConsumerService {
+
+    private final NotificationProcessingService processingService;
 
     // What is this class's actual job?
     // It is just a door. It doesn't talk to the database. It doesn't send emails.
@@ -29,8 +31,7 @@ public class NotificationConsumerService {
 
         try {
             // Here is where we will pass the event to the processing engine
-            // processingService.process(event);
-
+            processingService.process(event);
             log.info("✅ Successfully processed event: {}", event.getCorrelationId());
 
         } catch (Exception e) {

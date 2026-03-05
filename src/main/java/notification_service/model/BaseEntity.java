@@ -1,4 +1,4 @@
-package model;
+package notification_service.model;
 
 import java.time.LocalDateTime;
 import org.springframework.data.annotation.CreatedDate;

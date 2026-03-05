@@ -1,18 +1,18 @@
-package service;
+package notification_service.service;
 
 import java.util.*;
 
 import org.springframework.stereotype.Service;
 
-import dto.NotificationEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import model.Notification;
-import model.NotificationPreference;
-import model.NotificationTemplate;
-import repository.NotificationPreferenceRepository;
-import repository.NotificationRepository;
-import repository.NotificationTemplateRepository;
+import notification_service.dto.NotificationEvent;
+import notification_service.model.Notification;
+import notification_service.model.NotificationPreference;
+import notification_service.model.NotificationTemplate;
+import notification_service.repository.NotificationPreferenceRepository;
+import notification_service.repository.NotificationRepository;
+import notification_service.repository.NotificationTemplateRepository;
 
 @Slf4j
 @Service
@@ -44,7 +44,7 @@ public class NotificationProcessingService {
             return;
         }
 
-        String finalMessage = hydrateTemplate(template.getBodyTemplate(), event.getMetadata());
+        String finalMessage = hydrateTemplate(template.getBody(), event.getMetadata());
         List<String> targetChannels = template.getDefaultChannels();
         for (String channel : targetChannels) {
             if (preference.getMutedChannels() != null && preference.getMutedChannels().contains(channel)) {
@@ -63,7 +63,7 @@ public class NotificationProcessingService {
                     .eventType(event.getEventType())
                     .deliveryChannel(channel)
                     .priority(template.getDefaultPriority())
-                    .title(template.getTitleTemplate()) // For a real app, you'd hydrate the title too!
+                    .title(template.getTitle()) // For a real app, you'd hydrate the title too!
                     .message(finalMessage)
                     .metadata(event.getMetadata())
                     .userReadStatus("UNREAD")

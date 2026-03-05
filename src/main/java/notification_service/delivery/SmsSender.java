@@ -1,4 +1,4 @@
-package delivery;
+package notification_service.delivery;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -8,7 +8,7 @@ import com.twilio.type.PhoneNumber;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import model.Notification;
+import notification_service.model.Notification;
 
 @Slf4j
 @Service

@@ -8,6 +8,7 @@ import com.twilio.type.PhoneNumber;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import notification_service.enums.DeliveryChannel;
 import notification_service.model.Notification;
 
 @Slf4j
@@ -19,8 +20,8 @@ public class SmsSender implements ChannelSender {
     private String fromNumber;
 
     @Override
-    public String getChannelType() {
-        return "SMS";
+    public DeliveryChannel getChannelType() {
+        return DeliveryChannel.SMS;
     }
 
     @Override

@@ -13,9 +13,9 @@ services:
       - "5432:5432"
     # This is a bridge. It maps Port 5432 on your Mac to Port 5432 inside the container. This means your Spring Boot app can connect to the database just by calling localhost:5432.
     environment:
-      POSTGRES_DB: notification_db
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     # These are the exact credentials Docker will use to create your database the very first time it boots up. (Username: admin, Password: admin, Database name: notification_db).
     volumes:
       - postgres_data:/var/lib/postgresql/data

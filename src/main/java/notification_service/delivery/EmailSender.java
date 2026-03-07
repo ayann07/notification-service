@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import notification_service.enums.DeliveryChannel;
 import notification_service.model.Notification;
 import software.amazon.awssdk.services.ses.SesClient;
 import software.amazon.awssdk.services.ses.model.SendEmailRequest;
@@ -22,8 +23,8 @@ public class EmailSender implements ChannelSender {
     private String fromEmail;
 
     @Override
-    public String getChannelType() {
-        return "EMAIL";
+    public DeliveryChannel getChannelType() {
+        return DeliveryChannel.EMAIL;
     }
 
     @Override
@@ -35,7 +36,7 @@ public class EmailSender implements ChannelSender {
             SendEmailRequest request = SendEmailRequest.builder().source(fromEmail).destination(d -> d.toAddresses(
                     toAddress)).message(m -> m
                             .subject(s -> s.data(notification.getTitle()))
-                            .body(b -> b.text(t -> t.data(notification.getMessage()))))
+                            .body(b -> b.html(t -> t.data(notification.getMessage()))))
                     .build();
             SendEmailResponse response = sesClient.sendEmail(request);
             log.info("AWS ses email sent successfully! message ID :{} ", response.messageId());

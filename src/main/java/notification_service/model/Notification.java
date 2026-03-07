@@ -11,6 +11,8 @@ import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -20,6 +22,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import notification_service.enums.DeliveryChannel;
+import notification_service.enums.NetworkDeliveryStatus;
+import notification_service.enums.UserReadStatus;
 
 @Entity
 @Table(name = "notifications")
@@ -38,8 +43,14 @@ public class Notification extends BaseEntity {
 
     // We store the UUID directly instead of a strict @ManyToOne relationship
     // to keep the database queries lightning fast and decoupled.
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "user_id", nullable = true)
     private UUID userId;
+
+    @Column(name = "recipient_email", nullable = true)
+    private String recipientEmail;
+
+    @Column(name = "recipient_phone", nullable = true)
+    private String recipientPhone;
 
     @Column(name = "template_id")
     private UUID templateId;
@@ -63,8 +74,10 @@ public class Notification extends BaseEntity {
     @Column(name = "event_type", nullable = false)
     private String eventType;
 
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "delivery_channel", nullable = false)
-    private String deliveryChannel;
+    private DeliveryChannel deliveryChannel;
     // Why it is a single String: In your templates table, channels are a JSON array
     // (["EMAIL", "SMS"]). Here, it is just a single string ("EMAIL"). Why the
     // difference?
@@ -102,18 +115,22 @@ public class Notification extends BaseEntity {
     // sent the wrong message, you can look at the metadata column to see exactly
     // what data the upstream service actually sent you at that exact millisecond.
 
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "user_read_status")
     @Builder.Default
-    private String userReadStatus = "UNREAD";
+    private UserReadStatus userReadStatus = UserReadStatus.UNREAD;
     // User Status (UNREAD, READ, DISMISSED): Did the user actually open their
     // mobile app and look at the little bell icon? This tracks human behavior.
 
     @Column(name = "read_at")
     private LocalDateTime readAt;
 
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "network_delivery_status")
     @Builder.Default
-    private String networkDeliveryStatus = "PENDING";
+    private NetworkDeliveryStatus networkDeliveryStatus = NetworkDeliveryStatus.PENDING;
     // Network Status (PENDING, SENT, FAILED): Did your code successfully hand the
     // email off to SendGrid or the SMS off to Twilio? This tracks your backend
     // infrastructure.

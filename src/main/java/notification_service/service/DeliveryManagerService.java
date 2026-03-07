@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 
 import lombok.extern.slf4j.Slf4j;
 import notification_service.delivery.ChannelSender;
+import notification_service.enums.DeliveryChannel;
+import notification_service.enums.NetworkDeliveryStatus;
 import notification_service.model.Notification;
 import notification_service.repository.NotificationRepository;
 
@@ -14,7 +16,7 @@ import notification_service.repository.NotificationRepository;
 @Service
 public class DeliveryManagerService {
     private final NotificationRepository notificationRepository;
-    private final Map<String, ChannelSender> senderRegistry;
+    private final Map<DeliveryChannel, ChannelSender> senderRegistry;
 
     public DeliveryManagerService(List<ChannelSender> senders, NotificationRepository notificationRepository) {
         this.notificationRepository = notificationRepository;
@@ -29,21 +31,21 @@ public class DeliveryManagerService {
         ChannelSender sender = senderRegistry.get(notification.getDeliveryChannel());
         if (sender == null) {
             log.error("No sender found for this channel : {}", notification.getDeliveryChannel());
-            updateStatus(notification, "FAILED_NO_SENDER");
+            updateStatus(notification, NetworkDeliveryStatus.FAILED);
             return;
         }
         try {
             // Trigger the actual Email or SMS
             sender.send(notification);
-            updateStatus(notification, "DELIVERED");
+            updateStatus(notification, NetworkDeliveryStatus.SENT);
 
         } catch (Exception e) {
             log.error("Failed to deliver notification {}. Error: {}", notification.getId(), e.getMessage());
-            updateStatus(notification, "FAILED");
+            updateStatus(notification, NetworkDeliveryStatus.FAILED);
         }
     }
 
-    private void updateStatus(Notification notification, String status) {
+    private void updateStatus(Notification notification, NetworkDeliveryStatus status) {
         notification.setNetworkDeliveryStatus(status);
         notificationRepository.save(notification);
     }

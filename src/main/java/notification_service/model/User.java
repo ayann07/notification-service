@@ -7,8 +7,6 @@ import org.hibernate.annotations.SQLRestriction;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -52,11 +50,13 @@ import lombok.NoArgsConstructor;
 public class User extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    // @GeneratedValue(strategy = GenerationType.UUID): Tells Spring Boot,"Don't
-    // wait for the database to assign an ID. Generate a secure, random UUID (like
-    // 550e8400-e29b-41d4-a716-446655440000) right here in Java before you save it."
     private UUID id;
+
+    @Column(nullable = false)
+    private String firstName;
+
+    @Column(nullable = true)
+    private String lastName;
 
     @Column(nullable = false, unique = true)
     private String email;

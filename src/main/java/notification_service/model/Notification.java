@@ -17,6 +17,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,7 +28,9 @@ import notification_service.enums.NetworkDeliveryStatus;
 import notification_service.enums.UserReadStatus;
 
 @Entity
-@Table(name = "notifications")
+@Table(name = "notifications", uniqueConstraints = {
+        @UniqueConstraint(columnNames = { "idempotency_key", "delivery_channel" })
+})
 @SQLDelete(sql = "UPDATE notifications SET is_deleted = true, deleted_at = NOW() WHERE id = ?")
 @SQLRestriction("is_deleted = false")
 @Data
@@ -63,7 +66,7 @@ public class Notification extends BaseEntity {
     // database for correlation_id = 'txn_999' and instantly see exactly what
     // happened to it.
 
-    @Column(name = "idempotency_key", unique = true)
+    @Column(name = "idempotency_key", nullable = false)
     private String idempotencyKey;
     // idempotencyKey: Networks are messy. Sometimes Kafka will accidentally send
     // you the exact same PAYMENT_FAILED event twice. The upstream service includes

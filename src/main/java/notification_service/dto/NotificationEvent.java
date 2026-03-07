@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,9 +26,11 @@ public class NotificationEvent {
     // @Valid tells Spring to go inside this object and check its annotations!
     private GuestUserDetails guestUserDetails;
 
-    @NotNull(message = "eventType is missing")
+    @NotBlank(message = "eventType key is mandatory and cannot be blank")
     private String eventType;
     private String correlationId;
+
+    @NotBlank(message = "Idempotency key is mandatory and cannot be blank")
     private String idempotencyKey;
     // The dynamic data for the template (e.g., {"amount": 500, "order_id": "123"})
     private Map<String, Object> metadata;

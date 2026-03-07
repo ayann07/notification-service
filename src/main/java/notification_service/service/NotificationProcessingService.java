@@ -31,10 +31,14 @@ public class NotificationProcessingService {
     private final NotificationPreferenceRepository preferenceRepository;
     private final DeliveryManagerService deliveryManager;
     private final UserRepository userRepository;
+    private final IdempotencyService idempotencyService;
 
     @Transactional
     public void process(NotificationEvent event) {
         log.info("Processing event with correlationId:{}", event.getCorrelationId());
+        if (idempotencyService.isDuplicate(event.getIdempotencyKey())) {
+            return;
+        }
         ContactInfo contactInfo = resolveContactInfo(event);
         NotificationTemplate template = getActiveTemplateByEventType(event.getEventType());
         NotificationPreference preference = resolvePreferences(event.getUserId());

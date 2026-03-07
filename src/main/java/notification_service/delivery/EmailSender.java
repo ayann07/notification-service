@@ -30,7 +30,7 @@ public class EmailSender implements ChannelSender {
     @Override
     public void send(Notification notification) {
         log.info("Initiating AWS SES API call for Notification ID: {}", notification.getId());
-        String toAddress = "raza.ayan2002@gmail.com";
+        String toAddress = notification.getRecipientEmail();
 
         try {
             SendEmailRequest request = SendEmailRequest.builder().source(fromEmail).destination(d -> d.toAddresses(

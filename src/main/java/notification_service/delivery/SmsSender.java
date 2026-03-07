@@ -27,7 +27,7 @@ public class SmsSender implements ChannelSender {
     @Override
     public void send(Notification notification) {
         log.info("Initiating twilio API call for Notification ID: {}", notification.getId());
-        String toAddress = "+918299860429";
+        String toAddress = notification.getRecipientPhone();
         try {
             Message message = Message
                     .creator(new PhoneNumber(toAddress), new PhoneNumber(fromNumber), notification.getMessage())

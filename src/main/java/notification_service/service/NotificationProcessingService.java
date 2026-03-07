@@ -103,20 +103,13 @@ public class NotificationProcessingService {
             return;
         }
 
-        String channelIdempotencyKey = event.getIdempotencyKey() != null ? event.getIdempotencyKey() + "-" + channel
-                : null;
-        if (channelIdempotencyKey != null && notificationRepository.existsByIdempotencyKey(channelIdempotencyKey)) {
-            log.info("Duplicate event detected, skipping channel {} for key: {}", channel, channelIdempotencyKey);
-            return;
-        }
-
         Notification notification = Notification.builder()
                 .userId(event.getUserId())
                 .recipientEmail(contactInfo.email())
                 .recipientPhone(contactInfo.phone())
                 .templateId(template.getId())
                 .correlationId(event.getCorrelationId())
-                .idempotencyKey(channelIdempotencyKey)
+                .idempotencyKey(event.getIdempotencyKey())
                 .eventType(event.getEventType())
                 .deliveryChannel(DeliveryChannel.valueOf(channel.toUpperCase()))
                 .priority(template.getDefaultPriority())

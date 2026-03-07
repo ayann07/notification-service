@@ -58,6 +58,14 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
       # This is a critical networking setting. It tells Kafka to broadcast itself to your Spring Boot app so the app knows exactly where to send the messages.
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+  
+
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: notification-redisinsight
+    ports:
+      - "5540:5540"
+    restart: unless-stopped
 
 volumes:
   # This formally creates the "external hard drive" we mentioned in the PostgreSQL section so Docker knows it exists.

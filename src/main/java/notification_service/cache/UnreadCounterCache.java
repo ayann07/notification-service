@@ -1,4 +1,4 @@
-package notification_service.service;
+package notification_service.cache;
 
 import java.util.UUID;
 
@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class UnreadCounterService {
+public class UnreadCounterCache {
 
     private final StringRedisTemplate redisTemplate;
     private static final String UNREAD_PREFIX = "unread:";

@@ -10,20 +10,20 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
+import notification_service.cache.UnreadCounterCache;
 import notification_service.service.NotificationStateService;
-import notification_service.service.UnreadCounterService;
 
 @RestController
 @RequestMapping("/notifications")
 @RequiredArgsConstructor
 public class NotificationController {
 
-    private final UnreadCounterService unreadCounterService;
+    private final UnreadCounterCache unreadCounterCache;
     private final NotificationStateService notificationStateService;
 
     @GetMapping("/unread-count/{userId}")
     public ResponseEntity<Long> getUnreadCount(@PathVariable UUID userId) {
-        return ResponseEntity.ok(unreadCounterService.getUnreadCounter(userId));
+        return ResponseEntity.ok(unreadCounterCache.getUnreadCounter(userId));
     }
 
     @PostMapping("/{notificationId}/mark-read/{userId}")

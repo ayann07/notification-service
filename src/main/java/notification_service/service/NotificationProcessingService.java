@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import notification_service.cache.IdempotencyCache;
 import notification_service.dto.NotificationEvent;
 import notification_service.enums.DeliveryChannel;
 import notification_service.enums.NetworkDeliveryStatus;
@@ -31,12 +32,12 @@ public class NotificationProcessingService {
     private final NotificationPreferenceRepository preferenceRepository;
     private final DeliveryManagerService deliveryManager;
     private final UserRepository userRepository;
-    private final IdempotencyService idempotencyService;
+    private final IdempotencyCache idempotencyCache;
 
     @Transactional
     public void process(NotificationEvent event) {
         log.info("Processing event with correlationId:{}", event.getCorrelationId());
-        if (idempotencyService.isDuplicate(event.getIdempotencyKey())) {
+        if (idempotencyCache.isDuplicate(event.getIdempotencyKey())) {
             return;
         }
         ContactInfo contactInfo = resolveContactInfo(event);

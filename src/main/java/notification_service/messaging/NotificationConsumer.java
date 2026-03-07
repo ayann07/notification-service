@@ -1,4 +1,4 @@
-package notification_service.service;
+package notification_service.messaging;
 
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import notification_service.dto.NotificationEvent;
+import notification_service.service.NotificationProcessingService;
 
 @Slf4j
 // @Slf4j: This is just a shortcut so you don't have to write Logger logger =
@@ -15,7 +16,7 @@ import notification_service.dto.NotificationEvent;
 // @Service: This tells Spring Boot, "When the app starts, create one instance
 // of this class and keep it alive in the background permanently."
 @RequiredArgsConstructor
-public class NotificationConsumerService {
+public class NotificationConsumer {
 
     private final NotificationProcessingService processingService;
 

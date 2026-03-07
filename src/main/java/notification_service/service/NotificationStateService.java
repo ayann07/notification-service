@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import notification_service.cache.UnreadCounterCache;
 import notification_service.repository.NotificationRepository;
 
 @Slf4j
@@ -15,14 +16,14 @@ import notification_service.repository.NotificationRepository;
 public class NotificationStateService {
 
     private final NotificationRepository notificationRepository;
-    private final UnreadCounterService unreadCounterService;
+    private final UnreadCounterCache unreadCounterCache;
 
     @Transactional
     public void markNotificationAsRead(UUID notificationId, UUID userId) {
         int updatedRows = notificationRepository.markAsRead(notificationId, userId);
         if (updatedRows > 0) {
             log.info("row got updated in postgres, so updating the counter in redis");
-            unreadCounterService.decrement(userId);
+            unreadCounterCache.decrement(userId);
         } else {
             log.debug("Notification {} already read. Ignoring.", notificationId);
         }
@@ -33,7 +34,7 @@ public class NotificationStateService {
         int updatedRows = notificationRepository.markAllAsRead(userId);
         if (updatedRows > 0) {
             log.info("DB updated {} rows. Resetting Redis counter to 0 for user: {}", updatedRows, userId);
-            unreadCounterService.reset(userId);
+            unreadCounterCache.reset(userId);
         } else {
             log.debug("No unread notifications found for user {}. Redis remains untouched.", userId);
         }

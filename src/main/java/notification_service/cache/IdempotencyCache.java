@@ -1,4 +1,4 @@
-package notification_service.service;
+package notification_service.cache;
 
 import java.time.Duration;
 
@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class IdempotencyService {
+public class IdempotencyCache {
     private final StringRedisTemplate redisTemplate;
     private static final String IDEMPOTENCY_PREFIX = "idem:";
     // Time-To-Live (TTL). This tells Redis: "Automatically delete this key from

@@ -10,13 +10,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
 import notification_service.dto.NotificationEvent;
-import notification_service.service.NotificationProducerService;
+import notification_service.messaging.NotificationProducer;
 
 @RestController
 @RequestMapping("/test")
 @RequiredArgsConstructor
 public class TestEventController {
-    private final NotificationProducerService producerService;
+    private final NotificationProducer notificationProducer;
 
     @PostMapping("/publish")
     public ResponseEntity<String> publishTestEvent(@RequestBody NotificationEvent event) {
@@ -25,7 +25,7 @@ public class TestEventController {
         if (event.getCorrelationId() == null)
             event.setCorrelationId("test-" + UUID.randomUUID());
 
-        producerService.publishEvent(event);
+        notificationProducer.publishEvent(event);
         return ResponseEntity.ok("Successfully pushed to Kafka! Check your terminal and your phone/email");
     }
 

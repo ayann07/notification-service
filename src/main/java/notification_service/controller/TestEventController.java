@@ -20,8 +20,6 @@ public class TestEventController {
 
     @PostMapping("/publish")
     public ResponseEntity<String> publishTestEvent(@RequestBody NotificationEvent event) {
-        if (event.getUserId() == null)
-            event.setUserId(UUID.randomUUID());
         if (event.getCorrelationId() == null)
             event.setCorrelationId("test-" + UUID.randomUUID());
 

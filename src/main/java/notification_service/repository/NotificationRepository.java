@@ -35,7 +35,7 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
             UPDATE Notification n
             SET n.userReadStatus='READ'
             WHERE
-            AND n.userId=:userId
+            n.userId=:userId
             AND n.userReadStatus='UNREAD'
                 """)
     int markAllAsRead(@Param("userId") UUID userId);

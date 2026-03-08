@@ -10,7 +10,7 @@ import notification_service.model.NotificationTemplate;
 @Repository
 public interface NotificationTemplateRepository extends JpaRepository<NotificationTemplate, UUID> {
 
-    Optional<NotificationTemplate> findByEventTypeAndIsActiveTrue(String eventType);
+    List<NotificationTemplate> findAllByEventTypeAndIsActiveTrue(String eventType);
 
     Optional<NotificationTemplate> findByEventType(String eventType);
 }

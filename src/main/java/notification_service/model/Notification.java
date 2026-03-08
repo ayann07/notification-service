@@ -29,7 +29,7 @@ import notification_service.enums.UserReadStatus;
 
 @Entity
 @Table(name = "notifications", uniqueConstraints = {
-        @UniqueConstraint(columnNames = { "idempotency_key", "delivery_channel" })
+        @UniqueConstraint(name = "uk_idempotency_channel", columnNames = { "idempotencyKey", "deliveryChannel" })
 })
 @SQLDelete(sql = "UPDATE notifications SET is_deleted = true, deleted_at = NOW() WHERE id = ?")
 @SQLRestriction("is_deleted = false")

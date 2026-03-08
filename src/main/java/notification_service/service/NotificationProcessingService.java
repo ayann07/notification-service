@@ -41,7 +41,10 @@ public class NotificationProcessingService {
             return;
         }
         ContactInfo contactInfo = resolveContactInfo(event);
-        NotificationTemplate template = getActiveTemplateByEventType(event.getEventType());
+        List<NotificationTemplate> templates = getActiveTemplatesByEventType(event.getEventType());
+        if (templates.isEmpty()) {
+            return;
+        }
         NotificationPreference preference = resolvePreferences(event.getUserId());
         if (isEventMuted(preference, event.getEventType())) {
             log.info("User {} muted event {}. Dropping notification.", event.getUserId(), event.getEventType());
@@ -55,10 +58,15 @@ public class NotificationProcessingService {
             enrichedMetadata.put("lastName", contactInfo.lastName());
         }
 
-        String finalMessage = hydrateTemplate(template.getBody(), enrichedMetadata);
-        List<String> targetChannels = template.getDefaultChannels();
-        for (String channel : targetChannels) {
-            processSingleChannel(channel, event, contactInfo, template, preference, finalMessage, enrichedMetadata);
+        for (NotificationTemplate template : templates) {
+            String finalMessage = hydrateTemplate(template.getBody(), enrichedMetadata);
+            String finalTitle = template.getTitle() != null
+                    ? hydrateTemplate(template.getTitle(), enrichedMetadata)
+                    : null;
+            DeliveryChannel channel = template.getDeliveryChannel();
+
+            processSingleChannel(channel, event, contactInfo, template, preference, finalMessage, finalTitle,
+                    enrichedMetadata);
         }
     }
 
@@ -79,9 +87,12 @@ public class NotificationProcessingService {
 
     }
 
-    private NotificationTemplate getActiveTemplateByEventType(String eventType) {
-        return templateRepository.findByEventTypeAndIsActiveTrue(eventType)
-                .orElseThrow(() -> new IllegalArgumentException("no active template found with given eventType"));
+    private List<NotificationTemplate> getActiveTemplatesByEventType(String eventType) {
+        List<NotificationTemplate> templates = templateRepository.findAllByEventTypeAndIsActiveTrue(eventType);
+        if (templates.isEmpty()) {
+            log.warn("No active templates found with given eventType: {}", eventType);
+        }
+        return templates;
     }
 
     private NotificationPreference resolvePreferences(UUID userId) {
@@ -95,11 +106,16 @@ public class NotificationProcessingService {
         return preference.getMutedEvents() != null && preference.getMutedEvents().contains(eventType);
     }
 
-    private void processSingleChannel(String channel, NotificationEvent event, ContactInfo contactInfo,
+    private void processSingleChannel(DeliveryChannel channel, NotificationEvent event, ContactInfo contactInfo,
             NotificationTemplate template, NotificationPreference preference,
-            String finalMessage, Map<String, Object> enrichedMetadata) {
+            String finalMessage, String finalTitle, Map<String, Object> enrichedMetadata) {
 
-        if (preference.getMutedChannels() != null && preference.getMutedChannels().contains(channel)) {
+        if (channel == DeliveryChannel.PUSH_NOTIFICATION && event.getRecipientType() == RecipientType.GUEST) {
+            log.warn("⚠️ Skipping PUSH_NOTIFICATION for GUEST user. Guests do not have device tokens.");
+            return;
+        }
+
+        if (preference.getMutedChannels() != null && preference.getMutedChannels().contains(channel.name())) {
             log.info("User {} muted channel {}. Skipping this channel.", event.getUserId(), channel);
             return;
         }
@@ -112,9 +128,9 @@ public class NotificationProcessingService {
                 .correlationId(event.getCorrelationId())
                 .idempotencyKey(event.getIdempotencyKey())
                 .eventType(event.getEventType())
-                .deliveryChannel(DeliveryChannel.valueOf(channel.toUpperCase()))
+                .deliveryChannel(channel)
                 .priority(template.getDefaultPriority())
-                .title(template.getTitle())
+                .title(finalTitle)
                 .message(finalMessage)
                 .metadata(enrichedMetadata)
                 .userReadStatus(UserReadStatus.UNREAD)

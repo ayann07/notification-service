@@ -10,7 +10,7 @@ import notification_service.dto.NotificationEvent;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class NotificationProducerService {
+public class NotificationProducer {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 

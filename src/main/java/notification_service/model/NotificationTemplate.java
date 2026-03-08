@@ -1,6 +1,5 @@
 package notification_service.model;
 
-import java.util.List;
 import java.util.UUID;
 
 import org.hibernate.annotations.JdbcTypeCode;
@@ -10,18 +9,24 @@ import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import notification_service.enums.DeliveryChannel;
 
 @Entity
-@Table(name = "notification_templates")
+@Table(name = "notification_templates", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_event_channel", columnNames = { "eventType", "deliveryChannel" })
+})
 @SQLDelete(sql = "UPDATE notification_templates SET is_deleted = true, deleted_at = NOW() WHERE id = ?")
 @SQLRestriction("is_deleted = false")
 @Data
@@ -35,7 +40,7 @@ public class NotificationTemplate extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "event_type", nullable = false, unique = true)
+    @Column(name = "event_type", nullable = false)
     private String eventType;
     // Role: This is the exact string your upstream microservices will send over
     // Kafka (e.g., PAYMENT_FAILED or ORDER_SHIPPED).
@@ -51,10 +56,10 @@ public class NotificationTemplate extends BaseEntity {
     @Column(name = "body", columnDefinition = "TEXT", nullable = false)
     private String body;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "default_channels", columnDefinition = "jsonb")
-    @Builder.Default
-    private List<String> defaultChannels = List.of("IN_APP");
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "delivery_channel", nullable = false)
+    private DeliveryChannel deliveryChannel;
 
     // Role: This dictates where the message should go. A password reset might need
     // ["EMAIL", "SMS"], while a weekly digest only needs ["EMAIL"].

@@ -36,4 +36,9 @@ public class DeviceTokenService {
         }
     }
 
+    @Transactional
+    public void unregisterDeviceToken(String token) {
+        deviceTokenRepository.deleteByToken(token);
+    }
+
 }

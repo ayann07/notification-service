@@ -8,7 +8,10 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.type.SqlTypes;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -31,7 +34,7 @@ public class NotificationPreference extends BaseEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "muted_channels", columnDefinition = "jsonb")
     @Builder.Default
-    private List<String> mutedChannels = List.of();
+    private Set<String> mutedChannels = new HashSet<>();
 
     @JdbcTypeCode(SqlTypes.JSON)
     // When saving to the DB: It takes your Java List<String> ["PROMO", "DIGEST"]
@@ -50,7 +53,7 @@ public class NotificationPreference extends BaseEntity {
     // Adding @Builder.Default forces Lombok to respect your code. It says: "If I
     // build a new User Preference and I don't explicitly provide a list of muted
     // events, please use the empty List.of() as the default."
-    private List<String> mutedEvents = List.of();
+    private Set<String> mutedEvents = new HashSet<>();
     // in your Java code, you just want to work with a simple list. You want to be
     // able to say mutedEvents.add("WEEKLY_DIGEST") or
     // mutedEvents.contains("PAYMENT_FAILED"). List.of() just ensures that if a user

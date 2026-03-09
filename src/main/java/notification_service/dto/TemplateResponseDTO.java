@@ -4,8 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.List;
+import notification_service.enums.DeliveryChannel;
 
 @Data
 @Builder
@@ -15,6 +14,6 @@ public class TemplateResponseDTO {
     private String eventType;
     private String title;
     private String body;
-    private List<String> defaultChannels;
+    private DeliveryChannel deliveryChannel;
     private Integer defaultPriority;
 }

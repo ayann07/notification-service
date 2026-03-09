@@ -1,11 +1,10 @@
 package notification_service.dto;
 
-import java.util.List;
-
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import notification_service.enums.DeliveryChannel;
 
 @Data
 public class TemplateRequestDTO {
@@ -21,7 +20,7 @@ public class TemplateRequestDTO {
     private String body;
 
     @NotNull(message = "Channels list cannot be null")
-    private List<String> defaultChannels;
+    private DeliveryChannel deliveryChannel;
 
     private Integer defaultPriority;
 }

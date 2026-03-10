@@ -135,6 +135,7 @@ public class NotificationProcessingService {
                 .metadata(enrichedMetadata)
                 .userReadStatus(UserReadStatus.UNREAD)
                 .networkDeliveryStatus(NetworkDeliveryStatus.PENDING)
+                .producerName(event.getProducerName())
                 .build();
 
         notificationRepository.save(notification);

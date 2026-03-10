@@ -140,4 +140,7 @@ public class Notification extends BaseEntity {
 
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;
+
+    @Column(name = "producer_name", nullable = true, updatable = false)
+    private String producerName;
 }

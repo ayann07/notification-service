@@ -5,11 +5,13 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import notification_service.delivery.ChannelSender;
 import notification_service.enums.DeliveryChannel;
 import notification_service.enums.NetworkDeliveryStatus;
 import notification_service.model.Notification;
+import notification_service.ratelimit.RateLimitingService;
 import notification_service.repository.NotificationRepository;
 
 @Slf4j
@@ -17,9 +19,12 @@ import notification_service.repository.NotificationRepository;
 public class DeliveryManagerService {
     private final NotificationRepository notificationRepository;
     private final Map<DeliveryChannel, ChannelSender> senderRegistry;
+    private final RateLimitingService rateLimitingService;
 
-    public DeliveryManagerService(List<ChannelSender> senders, NotificationRepository notificationRepository) {
+    public DeliveryManagerService(List<ChannelSender> senders, NotificationRepository notificationRepository,
+            RateLimitingService rateLimitingService) {
         this.notificationRepository = notificationRepository;
+        this.rateLimitingService = rateLimitingService;
 
         // We convert the list into a Map so we can instantly look up the right sender
         // by its name (e.g., "EMAIL" -> EmailSender)
@@ -28,6 +33,15 @@ public class DeliveryManagerService {
     }
 
     public void dispatch(Notification notification) {
+
+        if (!rateLimitingService.isChannelAllowed(notification.getUserId(), notification.getDeliveryChannel())) {
+            log.warn("Rate limited on channel {} for user {}", notification.getDeliveryChannel(),
+                    notification.getUserId());
+
+            notification.setNetworkDeliveryStatus(NetworkDeliveryStatus.RATE_LIMITED);
+            notificationRepository.save(notification);
+            return;
+        }
         ChannelSender sender = senderRegistry.get(notification.getDeliveryChannel());
         if (sender == null) {
             log.error("No sender found for this channel : {}", notification.getDeliveryChannel());

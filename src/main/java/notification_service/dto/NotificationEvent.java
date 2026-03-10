@@ -18,6 +18,9 @@ import notification_service.enums.RecipientType;
 @AllArgsConstructor
 public class NotificationEvent {
 
+    @NotBlank(message = "producerName is mandatory (e.g., 'SAP_BILLING_SERVICE', 'WALLET_SERVICE')")
+    private String producerName;
+
     @NotNull(message = "recipientType is required (REGISTERED_USER or GUEST)")
     private RecipientType recipientType;
     private UUID userId;

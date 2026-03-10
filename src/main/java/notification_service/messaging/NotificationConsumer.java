@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import notification_service.dto.NotificationEvent;
+import notification_service.ratelimit.RateLimitingService;
 import notification_service.service.NotificationProcessingService;
 
 @Slf4j
@@ -19,6 +20,7 @@ import notification_service.service.NotificationProcessingService;
 public class NotificationConsumer {
 
     private final NotificationProcessingService processingService;
+    private final RateLimitingService rateLimitingService;
 
     // What is this class's actual job?
     // It is just a door. It doesn't talk to the database. It doesn't send emails.
@@ -31,12 +33,21 @@ public class NotificationConsumer {
                 event.getEventType(), event.getCorrelationId());
 
         try {
+            if (!rateLimitingService.isProducerAllowed(event.getProducerName())) {
+                // Send to a Dead Letter Queue (DLQ) here
+                return;
+            }
+
+            if (!rateLimitingService.isUserEventAllowed(event.getUserId(), event.getEventType())) {
+                return;
+            }
+
             // Here is where we will pass the event to the processing engine
             processingService.process(event);
-            log.info("✅ Successfully processed event: {}", event.getCorrelationId());
+            log.info("Successfully processed event: {}", event.getCorrelationId());
 
         } catch (Exception e) {
-            log.error("❌ Failed to process event: {}. Reason: {}",
+            log.error("Failed to process event: {}. Reason: {}",
                     event.getCorrelationId(), e.getMessage());
             // In a real system, we would send this to a Dead Letter Queue (DLQ) here
         }

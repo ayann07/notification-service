@@ -3,5 +3,6 @@ package notification_service.enums;
 public enum NetworkDeliveryStatus {
     PENDING,
     SENT,
-    FAILED
+    FAILED,
+    RATE_LIMITED
 }

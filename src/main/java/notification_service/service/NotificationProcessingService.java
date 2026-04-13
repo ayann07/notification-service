@@ -14,6 +14,8 @@ import notification_service.enums.DeliveryChannel;
 import notification_service.enums.NetworkDeliveryStatus;
 import notification_service.enums.RecipientType;
 import notification_service.enums.UserReadStatus;
+import notification_service.exceptions.InvalidRequestException;
+import notification_service.exceptions.ResourceNotFoundException;
 import notification_service.model.Notification;
 import notification_service.model.NotificationPreference;
 import notification_service.model.NotificationTemplate;
@@ -75,16 +77,22 @@ public class NotificationProcessingService {
     private ContactInfo resolveContactInfo(NotificationEvent event) {
         if (event.getRecipientType() == RecipientType.GUEST) {
             log.info("Processing GUEST user via explicit GuestUserDetails object.");
+            if (event.getGuestUserDetails() == null) {
+                throw new InvalidRequestException("guestUserDetails is required when recipientType is GUEST");
+            }
             return new ContactInfo(event.getGuestUserDetails().getFirstName(),
                     event.getGuestUserDetails().getLastName(), event.getGuestUserDetails().getEmail(),
                     event.getGuestUserDetails().getPhoneNumber());
         } else if (event.getRecipientType() == RecipientType.REGISTERED_USER) {
             log.info("Processing REGISTERED_USER: {}", event.getUserId());
-            User user = userRepository.findById(event.getUserId()).orElseThrow(() -> new IllegalArgumentException(
-                    "user not found with the given id: user not found in the local db"));
+            if (event.getUserId() == null) {
+                throw new InvalidRequestException("userId is required when recipientType is REGISTERED_USER");
+            }
+            User user = userRepository.findById(event.getUserId()).orElseThrow(() -> new ResourceNotFoundException(
+                    "User not found with id: " + event.getUserId()));
             return new ContactInfo(user.getFirstName(), user.getLastName(), user.getEmail(), user.getPhoneNumber());
         } else {
-            throw new IllegalArgumentException("Unknown recipient type");
+            throw new InvalidRequestException("Unknown recipient type");
         }
 
     }

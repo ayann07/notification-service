@@ -1,6 +1,8 @@
 package notification_service.service;
 
 import lombok.RequiredArgsConstructor;
+import notification_service.exceptions.ResourceConflictException;
+import notification_service.exceptions.ResourceNotFoundException;
 import notification_service.dto.TemplateRequestDTO;
 import notification_service.dto.TemplateResponseDTO;
 import notification_service.model.NotificationTemplate;
@@ -22,7 +24,7 @@ public class TemplateService {
         if (templateRepository.findByEventTypeAndDeliveryChannel(
                 template.getEventType(),
                 template.getDeliveryChannel()).isPresent()) {
-            throw new RuntimeException(
+            throw new ResourceConflictException(
                     "NotificationTemplate already exists for event type "
                             + template.getEventType()
                             + " and channel "
@@ -38,13 +40,14 @@ public class TemplateService {
 
     public NotificationTemplate getTemplateByEventType(String eventType) {
         return templateRepository.findByEventType(eventType)
-                .orElseThrow(() -> new RuntimeException("NotificationTemplate not found for event: " + eventType));
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "NotificationTemplate not found for event: " + eventType));
     }
 
     public TemplateResponseDTO updateTemplate(String eventType, TemplateRequestDTO requestDTO) {
         NotificationTemplate existingEntity = templateRepository
                 .findByEventTypeAndDeliveryChannel(eventType, requestDTO.getDeliveryChannel())
-                .orElseThrow(() -> new RuntimeException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Template not found for event type "
                                 + eventType
                                 + " and channel "

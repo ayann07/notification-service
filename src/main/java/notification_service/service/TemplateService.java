@@ -1,6 +1,8 @@
 package notification_service.service;
 
 import lombok.RequiredArgsConstructor;
+import notification_service.enums.DeliveryChannel;
+import notification_service.exceptions.InvalidRequestException;
 import notification_service.exceptions.ResourceConflictException;
 import notification_service.exceptions.ResourceNotFoundException;
 import notification_service.dto.TemplateRequestDTO;
@@ -38,20 +40,22 @@ public class TemplateService {
         return templateRepository.findAll();
     }
 
-    public NotificationTemplate getTemplateByEventType(String eventType) {
-        return templateRepository.findByEventType(eventType)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "NotificationTemplate not found for event: " + eventType));
-    }
-
-    public TemplateResponseDTO updateTemplate(String eventType, TemplateRequestDTO requestDTO) {
-        NotificationTemplate existingEntity = templateRepository
-                .findByEventTypeAndDeliveryChannel(eventType, requestDTO.getDeliveryChannel())
+    public NotificationTemplate getTemplate(String eventType, DeliveryChannel deliveryChannel) {
+        return templateRepository.findByEventTypeAndDeliveryChannel(eventType, deliveryChannel)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Template not found for event type "
                                 + eventType
                                 + " and channel "
-                                + requestDTO.getDeliveryChannel()));
+                                + deliveryChannel));
+    }
+
+    public TemplateResponseDTO updateTemplate(
+            String eventType,
+            DeliveryChannel deliveryChannel,
+            TemplateRequestDTO requestDTO) {
+
+        validateTemplateIdentity(eventType, deliveryChannel, requestDTO);
+        NotificationTemplate existingEntity = getTemplate(eventType, deliveryChannel);
 
         modelMapper.map(requestDTO, existingEntity);
         NotificationTemplate updatedEntity = templateRepository.save(existingEntity);
@@ -59,8 +63,22 @@ public class TemplateService {
         return modelMapper.map(updatedEntity, TemplateResponseDTO.class);
     }
 
-    public void deleteTemplate(String eventType) {
-        NotificationTemplate existing = getTemplateByEventType(eventType);
+    public void deleteTemplate(String eventType, DeliveryChannel deliveryChannel) {
+        NotificationTemplate existing = getTemplate(eventType, deliveryChannel);
         templateRepository.delete(existing);
+    }
+
+    private void validateTemplateIdentity(
+            String eventType,
+            DeliveryChannel deliveryChannel,
+            TemplateRequestDTO requestDTO) {
+
+        if (!eventType.equals(requestDTO.getEventType())) {
+            throw new InvalidRequestException("Path eventType must match request body eventType");
+        }
+
+        if (deliveryChannel != requestDTO.getDeliveryChannel()) {
+            throw new InvalidRequestException("Path deliveryChannel must match request body deliveryChannel");
+        }
     }
 }

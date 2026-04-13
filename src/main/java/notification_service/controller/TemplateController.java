@@ -17,6 +17,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import notification_service.dto.TemplateRequestDTO;
 import notification_service.dto.TemplateResponseDTO;
+import notification_service.enums.DeliveryChannel;
 import notification_service.model.NotificationTemplate;
 import notification_service.service.TemplateService;
 
@@ -28,9 +29,11 @@ public class TemplateController {
     private final TemplateService templateService;
     private final ModelMapper modelMapper; // Inject the Bean
 
-    @GetMapping("/{eventType}")
-    public ResponseEntity<TemplateResponseDTO> getTemplate(@PathVariable String eventType) {
-        NotificationTemplate entity = templateService.getTemplateByEventType(eventType);
+    @GetMapping("/{eventType}/{deliveryChannel}")
+    public ResponseEntity<TemplateResponseDTO> getTemplate(
+            @PathVariable String eventType,
+            @PathVariable DeliveryChannel deliveryChannel) {
+        NotificationTemplate entity = templateService.getTemplate(eventType, deliveryChannel);
 
         TemplateResponseDTO dto = modelMapper.map(entity, TemplateResponseDTO.class);
         return ResponseEntity.ok(dto);
@@ -43,10 +46,12 @@ public class TemplateController {
         return ResponseEntity.ok(templates);
     }
 
-    @DeleteMapping("/{eventType}")
-    public ResponseEntity<String> deleteTemplate(@PathVariable String eventType) {
-        templateService.deleteTemplate(eventType);
-        return ResponseEntity.ok("Template " + eventType + " deleted successfully.");
+    @DeleteMapping("/{eventType}/{deliveryChannel}")
+    public ResponseEntity<String> deleteTemplate(
+            @PathVariable String eventType,
+            @PathVariable DeliveryChannel deliveryChannel) {
+        templateService.deleteTemplate(eventType, deliveryChannel);
+        return ResponseEntity.ok("Template " + eventType + " for channel " + deliveryChannel + " deleted successfully.");
     }
 
     @PostMapping
@@ -56,11 +61,12 @@ public class TemplateController {
         return ResponseEntity.ok(modelMapper.map(savedEntity, TemplateResponseDTO.class));
     }
 
-    @PutMapping("/{eventType}")
+    @PutMapping("/{eventType}/{deliveryChannel}")
     public ResponseEntity<TemplateResponseDTO> updateTemplate(
             @PathVariable String eventType,
+            @PathVariable DeliveryChannel deliveryChannel,
             @Valid @RequestBody TemplateRequestDTO requestDTO) {
 
-        return ResponseEntity.ok(templateService.updateTemplate(eventType, requestDTO));
+        return ResponseEntity.ok(templateService.updateTemplate(eventType, deliveryChannel, requestDTO));
     }
 }

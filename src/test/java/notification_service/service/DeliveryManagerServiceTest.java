@@ -2,7 +2,6 @@ package notification_service.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -11,7 +10,6 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -44,7 +42,8 @@ class DeliveryManagerServiceTest {
         Notification notification = notification();
         // We create the service manually here because it builds a sender registry
         // from the list we pass into the constructor.
-        DeliveryManagerService service = new DeliveryManagerService(List.of(), notificationRepository, rateLimitingService);
+        DeliveryManagerService service = new DeliveryManagerService(List.of(), notificationRepository,
+                rateLimitingService);
         when(rateLimitingService.isChannelAllowed(notification.getUserId(), DeliveryChannel.EMAIL)).thenReturn(false);
 
         // Act: try to dispatch a notification on a blocked channel.
@@ -58,7 +57,8 @@ class DeliveryManagerServiceTest {
     @Test
     void dispatchMarksNotificationFailedWhenNoSenderExists() {
         Notification notification = notification();
-        DeliveryManagerService service = new DeliveryManagerService(List.of(), notificationRepository, rateLimitingService);
+        DeliveryManagerService service = new DeliveryManagerService(List.of(), notificationRepository,
+                rateLimitingService);
         when(rateLimitingService.isChannelAllowed(notification.getUserId(), DeliveryChannel.EMAIL)).thenReturn(true);
 
         // There is no sender registered for EMAIL in this test, so dispatch should

@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import notification_service.cache.IdempotencyCache;
+import notification_service.cache.UnreadCounterCache;
 import notification_service.dto.NotificationEvent;
 import notification_service.enums.DeliveryChannel;
 import notification_service.enums.NetworkDeliveryStatus;
@@ -33,6 +34,7 @@ public class NotificationProcessingService {
     private final DeliveryManagerService deliveryManager;
     private final UserRepository userRepository;
     private final IdempotencyCache idempotencyCache;
+    private final UnreadCounterCache unreadCounterCache;
 
     @Transactional
     public void process(NotificationEvent event) {
@@ -77,7 +79,7 @@ public class NotificationProcessingService {
                     event.getGuestUserDetails().getLastName(), event.getGuestUserDetails().getEmail(),
                     event.getGuestUserDetails().getPhoneNumber());
         } else if (event.getRecipientType() == RecipientType.REGISTERED_USER) {
-            log.info("Processing REGISTERED_USER:", event.getUserId());
+            log.info("Processing REGISTERED_USER: {}", event.getUserId());
             User user = userRepository.findById(event.getUserId()).orElseThrow(() -> new IllegalArgumentException(
                     "user not found with the given id: user not found in the local db"));
             return new ContactInfo(user.getFirstName(), user.getLastName(), user.getEmail(), user.getPhoneNumber());
@@ -139,6 +141,7 @@ public class NotificationProcessingService {
                 .build();
 
         notificationRepository.save(notification);
+        unreadCounterCache.increment(event.getUserId());
         log.info("Saved PENDING notification for User: {} via Channel: {}", event.getUserId(), channel);
 
         deliveryManager.dispatch(notification);

@@ -19,9 +19,15 @@ public class TemplateService {
     private final ModelMapper modelMapper;
 
     public NotificationTemplate createTemplate(NotificationTemplate template) {
-        if (templateRepository.findByEventType(template.getEventType()).isPresent()) {
+        if (templateRepository.findByEventTypeAndDeliveryChannel(
+                template.getEventType(),
+                template.getDeliveryChannel()).isPresent()) {
             throw new RuntimeException(
-                    "NotificationTemplate with event type " + template.getEventType() + " already exists!");
+                    "NotificationTemplate already exists for event type "
+                            + template.getEventType()
+                            + " and channel "
+                            + template.getDeliveryChannel()
+                            + "!");
         }
         return templateRepository.save(template);
     }
@@ -36,8 +42,13 @@ public class TemplateService {
     }
 
     public TemplateResponseDTO updateTemplate(String eventType, TemplateRequestDTO requestDTO) {
-        NotificationTemplate existingEntity = templateRepository.findByEventType(eventType)
-                .orElseThrow(() -> new RuntimeException("Template not found: " + eventType));
+        NotificationTemplate existingEntity = templateRepository
+                .findByEventTypeAndDeliveryChannel(eventType, requestDTO.getDeliveryChannel())
+                .orElseThrow(() -> new RuntimeException(
+                        "Template not found for event type "
+                                + eventType
+                                + " and channel "
+                                + requestDTO.getDeliveryChannel()));
 
         modelMapper.map(requestDTO, existingEntity);
         NotificationTemplate updatedEntity = templateRepository.save(existingEntity);

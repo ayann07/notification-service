@@ -5,7 +5,6 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import notification_service.delivery.ChannelSender;
 import notification_service.enums.DeliveryChannel;

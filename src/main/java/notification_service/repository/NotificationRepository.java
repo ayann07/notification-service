@@ -3,9 +3,10 @@ package notification_service.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import io.lettuce.core.dynamic.annotation.Param;
+import notification_service.enums.UserReadStatus;
 import notification_service.model.Notification;
 
 import java.util.*;
@@ -14,7 +15,7 @@ import java.util.*;
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
 
     // For the frontend to display the user's notification bell drop-down
-    List<Notification> findByUserIdAndUserReadStatusOrderByCreatedAtDesc(UUID userId, String userReadStatus);
+    List<Notification> findByUserIdAndUserReadStatusOrderByCreatedAtDesc(UUID userId, UserReadStatus userReadStatus);
 
     // To prevent processing the same Kafka event twice
     boolean existsByIdempotencyKey(String idempotencyKey);

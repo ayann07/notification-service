@@ -10,7 +10,7 @@ import notification_service.enums.DeviceType;
 @Data
 public class DeviceRegistrationRequest {
 
-    @NotBlank(message = "userId is required")
+    @NotNull(message = "userId is required")
     private UUID userId;
 
     @NotBlank(message = "token is required")

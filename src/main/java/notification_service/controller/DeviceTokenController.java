@@ -1,5 +1,7 @@
 package notification_service.controller;
 
+import java.util.UUID;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -29,9 +31,10 @@ public class DeviceTokenController {
     public ResponseEntity<String> registerDevice(
             Authentication authentication,
             @Valid @RequestBody DeviceRegistrationRequest deviceRegistrationRequest) {
-        // Prevent a user from registering a device token for someone else's userId.
-        authenticatedUserService.ensureUserOwnsResource(authentication, deviceRegistrationRequest.getUserId());
-        deviceTokenService.registerDeviceToken(deviceRegistrationRequest.getUserId(),
+        // The authenticated user owns the device token registration automatically, so
+        // we no longer need userId in the request body.
+        UUID authenticatedUserId = authenticatedUserService.getAuthenticatedUserId(authentication);
+        deviceTokenService.registerDeviceToken(authenticatedUserId,
                 deviceRegistrationRequest.getToken(), deviceRegistrationRequest.getDeviceType());
         return ResponseEntity.ok("Device token registered successfully");
     }

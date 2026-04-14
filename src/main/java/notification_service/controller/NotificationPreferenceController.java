@@ -6,7 +6,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,26 +22,25 @@ import notification_service.service.NotificationPreferenceService;
 @RequestMapping("/notification/preferences")
 @RequiredArgsConstructor
 public class NotificationPreferenceController {
-    // Preference APIs are also user-owned actions, so we verify the JWT subject
-    // against the requested userId.
+    // Preference APIs now derive the user from the JWT.
+    // This is cleaner and safer than asking the frontend to send userId for "my
+    // preferences" operations.
 
     private final NotificationPreferenceService preferenceService;
     private final AuthenticatedUserService authenticatedUserService;
 
-    @GetMapping("/{userId}")
-    public ResponseEntity<NotificationPreference> getPreferences(Authentication authentication, @PathVariable UUID userId) {
-        // A user can view only their own preferences.
-        authenticatedUserService.ensureUserOwnsResource(authentication, userId);
-        return ResponseEntity.ok(preferenceService.getNotificationPreferences(userId));
+    @GetMapping("/me")
+    public ResponseEntity<NotificationPreference> getPreferences(Authentication authentication) {
+        UUID authenticatedUserId = authenticatedUserService.getAuthenticatedUserId(authentication);
+        return ResponseEntity.ok(preferenceService.getNotificationPreferences(authenticatedUserId));
     }
 
     @PatchMapping("/channel")
     public ResponseEntity<NotificationPreference> toggleChannel(
             Authentication authentication,
             @Valid @RequestBody ChannelPreferenceToggleRequest request) {
-        // The userId inside the request body must belong to the authenticated user.
-        authenticatedUserService.ensureUserOwnsResource(authentication, request.getUserId());
-        NotificationPreference updatedPref = preferenceService.toggleChannel(request.getUserId(),
+        UUID authenticatedUserId = authenticatedUserService.getAuthenticatedUserId(authentication);
+        NotificationPreference updatedPref = preferenceService.toggleChannel(authenticatedUserId,
                 request.getDeliveryChannel(), request.isMute());
         return ResponseEntity.ok(updatedPref);
     }
@@ -51,9 +49,8 @@ public class NotificationPreferenceController {
     public ResponseEntity<NotificationPreference> toggleEvent(
             Authentication authentication,
             @Valid @RequestBody EventPreferenceToggleRequest request) {
-        // Same ownership protection for event-level mute/unmute changes.
-        authenticatedUserService.ensureUserOwnsResource(authentication, request.getUserId());
-        NotificationPreference updatedPref = preferenceService.toggleEvent(request.getUserId(),
+        UUID authenticatedUserId = authenticatedUserService.getAuthenticatedUserId(authentication);
+        NotificationPreference updatedPref = preferenceService.toggleEvent(authenticatedUserId,
                 request.getEventType(), request.isMute());
         return ResponseEntity.ok(updatedPref);
     }

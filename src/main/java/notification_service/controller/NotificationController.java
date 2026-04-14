@@ -20,40 +20,36 @@ import notification_service.service.NotificationStateService;
 @RequiredArgsConstructor
 public class NotificationController {
     // These endpoints are user-owned actions.
-    // Even though the API currently still accepts userId in the path, we no longer
-    // trust that value blindly. We compare it with the JWT subject first.
+    // So the controller derives the current user from the JWT instead of asking the
+    // client to send userId in the URL.
 
     private final UnreadCounterCache unreadCounterCache;
     private final NotificationStateService notificationStateService;
     private final AuthenticatedUserService authenticatedUserService;
 
-    @GetMapping("/unread-count/{userId}")
-    public ResponseEntity<Long> getUnreadCount(Authentication authentication, @PathVariable UUID userId) {
-        // Ownership check: the logged-in user can fetch only their own unread count.
-        authenticatedUserService.ensureUserOwnsResource(authentication, userId);
-        return ResponseEntity.ok(unreadCounterCache.getUnreadCounter(userId));
+    @GetMapping("/unread-count")
+    public ResponseEntity<Long> getUnreadCount(Authentication authentication) {
+        // We now derive the current user directly from the JWT instead of asking the
+        // client to send userId in the URL.
+        UUID authenticatedUserId = authenticatedUserService.getAuthenticatedUserId(authentication);
+        return ResponseEntity.ok(unreadCounterCache.getUnreadCounter(authenticatedUserId));
     }
 
-    @PostMapping("/{notificationId}/mark-read/{userId}")
+    @PostMapping("/{notificationId}/mark-read")
     public ResponseEntity<Void> markAsRead(
             Authentication authentication,
-            @PathVariable UUID notificationId,
-            @PathVariable UUID userId) {
+            @PathVariable UUID notificationId) {
 
-        // Ownership check before mutating notification state.
-        authenticatedUserService.ensureUserOwnsResource(authentication, userId);
-        notificationStateService.markNotificationAsRead(notificationId, userId);
+        UUID authenticatedUserId = authenticatedUserService.getAuthenticatedUserId(authentication);
+        notificationStateService.markNotificationAsRead(notificationId, authenticatedUserId);
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/mark-read/{userId}")
-    public ResponseEntity<Void> markAllAsRead(
-            Authentication authentication,
-            @PathVariable UUID userId) {
+    @PostMapping("/mark-read")
+    public ResponseEntity<Void> markAllAsRead(Authentication authentication) {
 
-        // Same ownership rule for "mark all as read".
-        authenticatedUserService.ensureUserOwnsResource(authentication, userId);
-        notificationStateService.markAllNotificationsAsRead(userId);
+        UUID authenticatedUserId = authenticatedUserService.getAuthenticatedUserId(authentication);
+        notificationStateService.markAllNotificationsAsRead(authenticatedUserId);
         return ResponseEntity.ok().build();
     }
 

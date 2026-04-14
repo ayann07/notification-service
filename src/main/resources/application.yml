@@ -65,3 +65,9 @@ twilio:
   account-sid: ${TWILIO_ACCOUNT_SID}
   auth-token: ${TWILIO_AUTH_TOKEN}
   from-number: ${TWILIO_FROM_NUMBER}
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:replace-this-dev-secret-with-a-long-random-value}
+    issuer: ${JWT_ISSUER:notification-service-local}
+    expiration-minutes: ${JWT_EXPIRATION_MINUTES:120}

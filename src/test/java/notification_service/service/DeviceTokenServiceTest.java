@@ -2,6 +2,8 @@ package notification_service.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -17,6 +19,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import notification_service.enums.DeviceType;
+import notification_service.exceptions.ResourceNotFoundException;
 import notification_service.model.DeviceToken;
 import notification_service.repository.DeviceTokenRepository;
 
@@ -70,10 +73,23 @@ class DeviceTokenServiceTest {
 
     @Test
     void unregisterDeviceTokenDeletesByToken() {
-        // Act: unregister the device.
-        deviceTokenService.unregisterDeviceToken("token-1");
+        UUID userId = UUID.randomUUID();
+        when(deviceTokenRepository.existsByUserIdAndToken(userId, "token-1")).thenReturn(true);
+
+        // Act: unregister the device for the authenticated user.
+        deviceTokenService.unregisterDeviceToken(userId, "token-1");
 
         // Assert: repository delete method is called with the same token.
         verify(deviceTokenRepository).deleteByToken("token-1");
+    }
+
+    @Test
+    void unregisterDeviceTokenThrowsWhenTokenDoesNotBelongToAuthenticatedUser() {
+        UUID userId = UUID.randomUUID();
+        when(deviceTokenRepository.existsByUserIdAndToken(userId, "token-1")).thenReturn(false);
+
+        assertThrows(ResourceNotFoundException.class,
+                () -> deviceTokenService.unregisterDeviceToken(userId, "token-1"));
+        verify(deviceTokenRepository, never()).deleteByToken("token-1");
     }
 }

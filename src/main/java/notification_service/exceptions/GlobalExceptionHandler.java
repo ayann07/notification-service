@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -111,6 +112,17 @@ public class GlobalExceptionHandler {
             WebRequest request) {
 
         return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request, null);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiErrorResponse> handleAccessDeniedException(
+            AccessDeniedException ex,
+            WebRequest request) {
+
+        // This is especially important now that we added ownership checks and role
+        // checks. When a user is authenticated but not allowed to do something, they
+        // should get a clean 403 JSON response.
+        return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request, null);
     }
 
     // Final safety net for anything we did not explicitly handle above.

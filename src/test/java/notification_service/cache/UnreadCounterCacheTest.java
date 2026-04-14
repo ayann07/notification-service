@@ -15,87 +15,120 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 
+// Activates the Mockito framework so the @Mock annotations work.
 @ExtendWith(MockitoExtension.class)
 class UnreadCounterCacheTest {
-    // This class tests the small Redis cache that stores a user's unread
-    // notification count.
-    // We mock Redis so we can focus on the key/value behavior only.
 
+    // --- MOCKS ---
+    // We are mocking the core Spring Redis template. We don't want to connect
+    // to a real Redis server (like localhost:6379) during our tests.
     @Mock
-    // Fake Redis template.
     private StringRedisTemplate redisTemplate;
 
+    // In Spring Redis, you don't usually call methods directly on the template.
+    // You call redisTemplate.opsForValue() to get a ValueOperations object, and
+    // call methods on THAT. Therefore, we must mock this secondary object as well.
     @Mock
-    // Fake Redis string operations.
     private ValueOperations<String, String> valueOperations;
 
+    // This is the actual service we are testing. (Notice it does NOT have @Mock).
     private UnreadCounterCache unreadCounterCache;
 
+    // @BeforeEach tells JUnit: "Run this exact block of code before EVERY single
+    // @Test."
+    // It guarantees every test starts with a fresh, clean slate, preventing data
+    // from
+    // one test from bleeding into another and causing random failures.
     @BeforeEach
     void setUp() {
-        // Create the real cache class with mocked Redis dependencies.
+        // --- ARRANGE (Common Setup) ---
+        // We initialize the cache and inject our fake Redis template into it.
         unreadCounterCache = new UnreadCounterCache(redisTemplate);
 
-        // Whenever the cache asks for string value operations, return the mock.
+        // This is a crucial Mockito trick for chained methods!
+        // We are telling the fake redisTemplate: "If the code ever asks you for
+        // opsForValue(),
+        // don't return null. Return our fake valueOperations mock instead."
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
     }
 
     @Test
     void incrementDoesNothingForNullUserId() {
-        // If userId is null, the cache should return early instead of building an
-        // invalid Redis key.
+        // --- ACT ---
         unreadCounterCache.increment(null);
 
-        // verify(..., never()) means "make sure this method was NOT called".
+        // --- ASSERT ---
+        // verify(..., never()) checks that an action strictly did NOT happen.
+        // ArgumentMatchers.anyString() is a Mockito wildcard.
+        // We are saying: "Verify that valueOperations.increment() was NEVER called
+        // with ANY string whatsoever." This proves our null check is working.
         verify(valueOperations, never()).increment(org.mockito.ArgumentMatchers.anyString());
     }
 
     @Test
     void incrementUsesUserSpecificRedisKey() {
+        // --- ARRANGE ---
         UUID userId = UUID.randomUUID();
 
-        // Act: increment the unread counter for a specific user.
+        // --- ACT ---
         unreadCounterCache.increment(userId);
 
-        // Assert: the cache should write to the key format unread:<userId>.
+        // --- ASSERT ---
+        // We verify that the cache constructed the exact correct string key
+        // ("unread:uuid-goes-here") before pushing it to the Redis increment command.
         verify(valueOperations).increment("unread:" + userId);
     }
 
     @Test
     void decrementClampsCounterToZeroWhenRedisGoesNegative() {
+        // --- ARRANGE ---
         UUID userId = UUID.randomUUID();
 
-        // Simulate Redis returning -1 after decrementing, which means the count
-        // accidentally went below zero.
+        // Here we test an "edge case" (what happens when things go wrong).
+        // We program our fake Redis to simulate a weird state: "When you decrement this
+        // key,
+        // pretend the result in the database is now -1."
         when(valueOperations.decrement("unread:" + userId)).thenReturn(-1L);
 
+        // --- ACT ---
         unreadCounterCache.decrement(userId);
 
-        // The cache protects against negative unread counts by forcing them back to 0.
+        // --- ASSERT ---
+        // We verify that our service caught the negative number and immediately fired
+        // a "set" command to force the value back to "0", protecting our data
+        // integrity.
         verify(valueOperations).set("unread:" + userId, "0");
     }
 
     @Test
     void resetWritesZeroToRedis() {
+        // --- ARRANGE ---
         UUID userId = UUID.randomUUID();
 
-        // reset(...) means "mark all notifications as read", so the count becomes 0.
+        // --- ACT ---
         unreadCounterCache.reset(userId);
 
+        // --- ASSERT ---
+        // Simply verify that resetting fires a strict overwrite command setting the key
+        // to "0".
         verify(valueOperations).set("unread:" + userId, "0");
     }
 
     @Test
     void getUnreadCounterReturnsParsedValueOrZero() {
+        // --- ARRANGE ---
         UUID userId = UUID.randomUUID();
 
-        // Simulate an unread count already stored in Redis.
+        // We program the mock to simulate a successful cache hit.
+        // "When asked to get this specific key, return the string '7'."
         when(valueOperations.get("unread:" + userId)).thenReturn("7");
 
-        // The cache converts the Redis string back into a long.
+        // --- ACT & ASSERT ---
+        // Test 1: Check if the string "7" is correctly parsed into a Long 7L.
         assertEquals(7L, unreadCounterCache.getUnreadCounter(userId));
 
-        // Null user IDs are treated safely and return 0 instead of failing.
+        // Test 2: Ensure that passing a null ID safely returns 0L instead of crashing
+        // with a NullPointerException.
         assertEquals(0L, unreadCounterCache.getUnreadCounter(null));
     }
 }

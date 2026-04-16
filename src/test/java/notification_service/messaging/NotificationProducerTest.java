@@ -46,4 +46,20 @@ class NotificationProducerTest {
         // user.
         verify(kafkaTemplate).send("notification-events", userId.toString(), event);
     }
+
+    @Test
+    void publishEventFallsBackToIdempotencyKeyForGuestEvents() {
+        NotificationEvent event = NotificationEvent.builder()
+                .producerName("BILLING")
+                .recipientType(RecipientType.GUEST)
+                .eventType("ORDER_SHIPPED")
+                .correlationId("corr-guest")
+                .idempotencyKey("idem-guest")
+                .build();
+        ReflectionTestUtils.setField(notificationProducer, "notificationEventsTopic", "notification-events");
+
+        notificationProducer.publishEvent(event);
+
+        verify(kafkaTemplate).send("notification-events", "idem-guest", event);
+    }
 }

@@ -87,6 +87,9 @@ directly with Kafka tooling:
 kafka-console-consumer --bootstrap-server localhost:9092 --topic notification-events.dlt --from-beginning
 ```
 
+For recovery, admins or internal operators can replay a dead-lettered record back
+to the main topic through the internal recovery API described below.
+
 ## Dev Authentication
 
 ### POST `/api/v1/dev-auth/token`
@@ -514,9 +517,72 @@ Behavior:
 
 Current implementation note:
 
-- the local `NotificationProducer` uses `event.getUserId().toString()` as the Kafka key
-- because of that, this built-in test endpoint is currently most reliable for registered-user test events
-- guest notification handling exists deeper in the processing layer, but the local publish helper is not yet optimized for guest event publishing
+- the local `NotificationProducer` uses `userId` when present, otherwise falls back to the event idempotency key and then correlation ID
+- this means guest events can now be published safely through the built-in test tooling
+
+### POST `/api/v1/internal/recovery/dlt/replay`
+
+Fetches a dead-lettered record by topic/partition/offset and re-publishes its
+`NotificationEvent` payload back to the main `notification-events` topic.
+
+Auth required:
+
+- `ROLE_INTERNAL` or `ROLE_ADMIN`
+
+Request body:
+
+```json
+{
+  "sourceTopic": "notification-events.dlt",
+  "targetTopic": "notification-events",
+  "partition": 0,
+  "offset": 15,
+  "dryRun": false,
+  "regenerateIdempotencyKey": true,
+  "regenerateCorrelationId": false
+}
+```
+
+Behavior:
+
+- the service fetches the exact record from Kafka using the supplied topic,
+  partition, and offset
+- only topics ending with `.dlt` are accepted
+- `dryRun=true` previews the replay result without publishing anything
+- `regenerateIdempotencyKey` defaults to `true`
+- this avoids the Redis idempotency cache dropping the replay immediately
+- `regenerateCorrelationId` defaults to `false`
+- replay attempts are capped per dead-letter record using Redis-backed tracking
+
+Response:
+
+```json
+{
+  "topic": "notification-events.dlt",
+  "partition": 0,
+  "offset": 15,
+  "dryRun": false,
+  "replayAttempt": 1,
+  "maxReplayAttempts": 3,
+  "actor": "ops-admin",
+  "originalIdempotencyKey": "idem-1",
+  "replayIdempotencyKey": "idem-1-replay-7de5a2ca-4d70-4c4b-a3f5-d0d3f24a3a3b",
+  "originalCorrelationId": "corr-1",
+  "replayCorrelationId": "corr-1",
+  "replayEventPreview": {
+    "producerName": "ORDER_SERVICE",
+    "recipientType": "REGISTERED_USER",
+    "userId": "6a077ec7-3f5f-4e8a-98ca-06fd03e68e10",
+    "eventType": "ORDER_SHIPPED",
+    "correlationId": "corr-1",
+    "idempotencyKey": "idem-1-replay-7de5a2ca-4d70-4c4b-a3f5-d0d3f24a3a3b",
+    "metadata": {
+      "orderId": 42
+    }
+  },
+  "message": "Replay event published back to the main Kafka topic."
+}
+```
 
 ## Swagger And OpenAPI
 

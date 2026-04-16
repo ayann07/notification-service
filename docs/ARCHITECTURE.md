@@ -451,10 +451,23 @@ is to listen to `notification-events.dlt` and log:
 - record key
 - correlation ID
 - event type
+- full event payload
 - dead-letter headers
 
 This gives developers a very lightweight first step for reading failed records
 without building a full replay dashboard yet.
+
+Recovery path:
+
+- inspect the failed payload from the DLT logs or Kafka tooling
+- fix the underlying code/data/config problem
+- replay the event through `POST /api/v1/internal/recovery/dlt/replay`
+- the recovery endpoint fetches the original dead-letter record by topic,
+  partition, and offset
+- it supports `dryRun` preview mode for safer operational checks
+- by default the replay flow generates a fresh idempotency key so the Redis
+  deduplication layer does not drop the replay immediately
+- replay attempts are capped per dead-letter record using Redis-backed guardrails
 
 ## Idempotency Design
 

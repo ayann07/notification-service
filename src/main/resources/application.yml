@@ -82,3 +82,7 @@ app:
       interval-ms: 1000
     dlt:
       suffix: .dlt
+      replay:
+        fetch-timeout-ms: 3000
+        max-attempts-per-record: 3
+        attempt-ttl-hours: 168

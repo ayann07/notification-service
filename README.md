@@ -248,6 +248,12 @@ For Kafka dead-letter inspection, you can also read the DLT topic directly:
 kafka-console-consumer --bootstrap-server localhost:9092 --topic notification-events.dlt --from-beginning
 ```
 
+If you need to recover a failed event after fixing the root cause, you can replay
+the dead-letter record through `POST /api/v1/internal/recovery/dlt/replay`.
+The recovery flow fetches the original DLT record by topic/partition/offset,
+supports dry-run preview mode, and regenerates the idempotency key by default so
+the Redis deduplication layer does not reject the replayed event as a duplicate.
+
 ## Required Local Configuration
 
 The service expects a mixture of environment variables and one local Firebase credential file.

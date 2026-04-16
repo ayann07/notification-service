@@ -23,13 +23,14 @@ public class NotificationDltConsumer {
         NotificationEvent event = record.value();
 
         log.error(
-                "Received record in DLT. topic={} partition={} offset={} key={} correlationId={} eventType={} headers={}",
+                "Received record in DLT. topic={} partition={} offset={} key={} correlationId={} eventType={} event={} headers={}",
                 record.topic(),
                 record.partition(),
                 record.offset(),
                 record.key(),
                 event != null ? event.getCorrelationId() : null,
                 event != null ? event.getEventType() : null,
+                event,
                 readableHeaders(record));
     }
 

@@ -58,6 +58,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/dev-auth/**").permitAll()
                         // Template management is an admin operation.
                         .requestMatchers("/api/v1/templates/**").hasRole("ADMIN")
+                        // Replay/recovery is an internal operational action.
+                        .requestMatchers("/api/v1/internal/recovery/**").hasAnyRole("ADMIN", "INTERNAL")
                         // Test publish is treated like an internal/admin action.
                         .requestMatchers("/api/v1/test/**").hasAnyRole("ADMIN", "INTERNAL")
                         // User-facing notification APIs require a normal authenticated user

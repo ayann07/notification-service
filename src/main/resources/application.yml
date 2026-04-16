@@ -71,3 +71,14 @@ security:
     secret: ${JWT_SECRET:replace-this-dev-secret-with-a-long-random-value}
     issuer: ${JWT_ISSUER:notification-service-local}
     expiration-minutes: ${JWT_EXPIRATION_MINUTES:120}
+
+app:
+  kafka:
+    topics:
+      notification-events: notification-events
+      notification-events-dlt: notification-events.dlt
+    retry:
+      max-attempts: 3
+      interval-ms: 1000
+    dlt:
+      suffix: .dlt

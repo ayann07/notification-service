@@ -1,6 +1,6 @@
 package notification_service.messaging;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -69,15 +69,15 @@ class NotificationConsumerTest {
     }
 
     @Test
-    void consumeNotificationEventSwallowsUnexpectedProcessingErrors() {
+    void consumeNotificationEventRethrowsUnexpectedProcessingErrorsForRetryHandling() {
         NotificationEvent event = event();
         when(rateLimitingService.isProducerAllowed("BILLING")).thenReturn(true);
         when(rateLimitingService.isUserEventAllowed(event.getUserId(), event.getEventType())).thenReturn(true);
         doThrow(new RuntimeException("boom")).when(processingService).process(event);
 
-        // Kafka listeners should not crash the whole consumer loop because one
-        // message failed unexpectedly.
-        assertDoesNotThrow(() -> notificationConsumer.consumeNotificationEvent(event));
+        // The listener now re-throws processing failures so Spring Kafka can apply
+        // retry + dead-letter-topic handling.
+        assertThrows(RuntimeException.class, () -> notificationConsumer.consumeNotificationEvent(event));
     }
 
     private NotificationEvent event() {

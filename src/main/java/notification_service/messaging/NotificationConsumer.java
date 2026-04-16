@@ -27,29 +27,32 @@ public class NotificationConsumer {
     // Its only job is to listen to the Kafka network, catch the incoming JSON, turn
     // it into a Java object, and hand it off to the next layer (the Processing
     // Service) to do the actual heavy lifting.
-    @KafkaListener(topics = "notification-events", groupId = "notification-group")
+    @KafkaListener(topics = "${app.kafka.topics.notification-events:notification-events}", groupId = "${spring.kafka.consumer.group-id:notification-group}")
     public void consumeNotificationEvent(NotificationEvent event) {
         log.info("Received Kafka Event! EventType: {} | CorrelationId: {}",
                 event.getEventType(), event.getCorrelationId());
 
+        if (!rateLimitingService.isProducerAllowed(event.getProducerName())) {
+            // Producer throttling is an intentional drop, not a broken message.
+            return;
+        }
+
+        if (!rateLimitingService.isUserEventAllowed(event.getUserId(), event.getEventType())) {
+            // User-event throttling is also an intentional drop, so we do not retry or
+            // dead-letter it.
+            return;
+        }
+
         try {
-            if (!rateLimitingService.isProducerAllowed(event.getProducerName())) {
-                // Send to a Dead Letter Queue (DLQ) here
-                return;
-            }
-
-            if (!rateLimitingService.isUserEventAllowed(event.getUserId(), event.getEventType())) {
-                return;
-            }
-
             // Here is where we will pass the event to the processing engine
             processingService.process(event);
             log.info("Successfully processed event: {}", event.getCorrelationId());
-
         } catch (Exception e) {
             log.error("Failed to process event: {}. Reason: {}",
                     event.getCorrelationId(), e.getMessage());
-            // In a real system, we would send this to a Dead Letter Queue (DLQ) here
+            // Re-throw so Spring Kafka can retry and then publish to the DLT if the
+            // record still fails.
+            throw e;
         }
     }
 }

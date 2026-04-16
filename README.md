@@ -26,6 +26,12 @@ At a high level, the service:
 8. dispatches the notification to the correct channel sender
 9. updates delivery status to `SENT`, `FAILED`, or `RATE_LIMITED`
 
+Unexpected Kafka processing failures are retried and, if they still fail, moved
+to a dead-letter topic instead of being silently lost.
+
+The project also includes a dedicated DLT consumer so failed records become
+visible in the application logs for local debugging and early operational use.
+
 It also exposes REST APIs for:
 
 - managing templates
@@ -236,6 +242,12 @@ The project ships with `docker-compose.yml` for the main infrastructure services
 
 RedisInsight is optional, but it is helpful when debugging Redis keys manually.
 
+For Kafka dead-letter inspection, you can also read the DLT topic directly:
+
+```bash
+kafka-console-consumer --bootstrap-server localhost:9092 --topic notification-events.dlt --from-beginning
+```
+
 ## Required Local Configuration
 
 The service expects a mixture of environment variables and one local Firebase credential file.
@@ -402,4 +414,3 @@ The `/api/v1/test/publish` route exists to help local testing. It is not meant t
 3. Read [docs/API_REFERENCE.md](docs/API_REFERENCE.md)
 4. Read [docs/TESTING.md](docs/TESTING.md)
 5. Browse the `plans/` folder if you want historical design context
-

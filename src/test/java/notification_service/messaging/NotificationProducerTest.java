@@ -10,6 +10,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import notification_service.dto.NotificationEvent;
 import notification_service.enums.RecipientType;
@@ -35,6 +36,7 @@ class NotificationProducerTest {
                 .eventType("ORDER_SHIPPED")
                 .idempotencyKey("idem-1")
                 .build();
+        ReflectionTestUtils.setField(notificationProducer, "notificationEventsTopic", "notification-events");
 
         // Act: publish the event.
         notificationProducer.publishEvent(event);

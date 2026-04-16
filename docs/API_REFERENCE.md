@@ -62,6 +62,31 @@ Example:
 
 Security-generated errors follow the same overall structure but usually return `validationErrors: null`.
 
+## Dead-Letter Topic Workflow
+
+The project now includes operational support for the Kafka dead-letter topic.
+
+Main topic:
+
+- `notification-events`
+
+Dead-letter topic:
+
+- `notification-events.dlt`
+
+How failed records are handled:
+
+1. the main consumer retries unexpected processing failures
+2. if retries are exhausted, Spring Kafka publishes the original record to the DLT
+3. `NotificationDltConsumer` listens to the DLT and logs failed records with Kafka metadata and headers
+
+For local inspection outside the app, you can also consume the DLT topic
+directly with Kafka tooling:
+
+```bash
+kafka-console-consumer --bootstrap-server localhost:9092 --topic notification-events.dlt --from-beginning
+```
+
 ## Dev Authentication
 
 ### POST `/api/v1/dev-auth/token`
@@ -501,4 +526,3 @@ These routes are publicly accessible:
 - `GET /v3/api-docs`
 
 They are useful for discovering the API interactively while developing locally.
-

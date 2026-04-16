@@ -275,6 +275,10 @@ Before doing deeper work, it applies two rate-limit checks:
 
 If either check fails, processing stops early.
 
+If deeper processing throws an exception, the listener now lets the failure
+propagate to Spring Kafka's error handler so the record can be retried and then
+sent to a dead-letter topic if it still cannot be processed.
+
 ### Step 3. Idempotency check
 
 `NotificationProcessingService` asks `IdempotencyCache` whether the event's idempotency key has already been seen.
@@ -414,6 +418,43 @@ Current implementation note:
 - so push currently bypasses the per-channel limiter in practice
 
 That is worth knowing if someone is troubleshooting unexpected push throughput.
+
+## Failure Handling And DLT
+
+The Kafka consumer now uses a retry + dead-letter-topic flow for unexpected
+processing failures.
+
+The behavior is:
+
+1. a record is consumed from `notification-events`
+2. if processing throws unexpectedly, Spring Kafka retries it
+3. after the configured retry attempts are exhausted, the original record is
+   published to a dead-letter topic
+
+Current dead-letter naming rule:
+
+- main topic: `notification-events`
+- DLT topic: `notification-events.dlt`
+
+Important distinction:
+
+- intentional business drops such as producer throttling or user-event
+  throttling are returned early and do not go to the DLT
+- unexpected processing failures are retried and then dead-lettered
+
+Operationally, the service now also includes a dedicated DLT consumer. Its job
+is to listen to `notification-events.dlt` and log:
+
+- Kafka topic
+- partition
+- offset
+- record key
+- correlation ID
+- event type
+- dead-letter headers
+
+This gives developers a very lightweight first step for reading failed records
+without building a full replay dashboard yet.
 
 ## Idempotency Design
 
@@ -557,4 +598,3 @@ If you want to learn the system by reading code, a good order is:
 5. `ChannelSender` implementations
 6. `SecurityConfig`
 7. `GlobalExceptionHandler`
-

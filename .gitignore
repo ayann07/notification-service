@@ -70,3 +70,5 @@ application-secret.yml
 src/main/resources/firebase-adminsdk.json
 
 /plans
+
+.vexp

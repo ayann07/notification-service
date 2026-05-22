@@ -119,6 +119,8 @@ The end-to-end flow looks like this:
 
 For a fuller walkthrough, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+For Docker and CI details, see [docs/OPERATIONS.md](docs/OPERATIONS.md).
+
 ## Tech Stack
 
 - Java 21

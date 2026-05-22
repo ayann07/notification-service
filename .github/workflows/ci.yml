@@ -1,0 +1,144 @@
+name: CI
+
+on:
+# This workflow runs automatically every time code is pushed to main (or master), or when a Pull Request is opened.
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+permissions:
+  # A security best practice. It gives the pipeline read-only access to your code, meaning a hacker couldn't use this pipeline to maliciously modify your repository.
+  contents: read
+
+concurrency:
+  # A great cost-saving feature. If you push a commit, and then push another commit 30 seconds later, GitHub will cancel the first run (cancel-in-progress: true) and only test the newest code.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test and Package
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # This is GitHub Actions' built-in version of Docker Compose. Before it even looks at your Java code, it boots up three containers specifically for your integration tests:
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: notification_db
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: admin
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U admin -d notification_db"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      kafka:
+        image: bitnami/kafka:3.7
+        env:
+          ALLOW_PLAINTEXT_LISTENER: yes
+          KAFKA_CFG_NODE_ID: 1
+          KAFKA_CFG_PROCESS_ROLES: broker,controller
+          KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@127.0.0.1:9093
+          KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+          KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+          KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+          KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+        ports:
+          - 9092:9092
+        options: >-
+          --health-cmd "kafka-topics.sh --bootstrap-server localhost:9092 --list"
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          # Downloads your code and installs Java 21 (Temurin). It also caches Maven dependencies to speed up future runs.
+
+      - name: Make Maven wrapper executable
+        run: chmod +x mvnw
+
+      - name: Run tests
+        run: ./mvnw -B test
+        env:
+          # CI uses dummy provider credentials only so the Spring context can start.
+          # Do not put real secrets in this file; use GitHub Actions secrets in deployment workflows.
+          DB_USERNAME: admin
+          DB_PASSWORD: admin
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/notification_db
+          SPRING_DATA_REDIS_HOST: localhost
+          SPRING_DATA_REDIS_PORT: 6379
+          SPRING_KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+          AWS_ACCESS_KEY: ci-access-key
+          AWS_SECRET_KEY: ci-secret-key
+          AWS_VERIFIED_EMAIL: ci@example.com
+          TWILIO_ACCOUNT_SID: AC00000000000000000000000000000000
+          TWILIO_AUTH_TOKEN: ci-token
+          TWILIO_FROM_NUMBER: "+10000000000"
+          JWT_SECRET: replace-this-ci-secret-with-a-long-random-value
+          JWT_ISSUER: notification-service-ci
+        
+        # It passes in a block of env: variables pointing to localhost (because GitHub Actions maps those services directly to the runner's localhost) and uses dummy tokens for AWS and Twilio so the tests don't send real emails or text messages.
+
+      - name: Package application
+        run: ./mvnw -B -DskipTests package
+        # Once tests pass, it runs ./mvnw package to compile your code into an app.jar file.
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: notification-service-jar
+          path: target/*.jar
+          if-no-files-found: error
+          retention-days: 7
+        # It grabs that .jar file and saves it to the GitHub servers for 7 days. You can download it directly from the Actions tab if you want to inspect it.
+
+  docker:
+    name: Docker Image
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: test
+    # It waits for the Java tests to pass. If the Java code is broken, it won't even bother trying to build the Docker container.
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: notification-service:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          # cache-to: type=gha:It saves the Docker build layers directly into GitHub Actions' cache, making tomorrow's builds run significantly faster.
+
+      - name: Validate Compose file
+        run: docker compose config --quiet
+        # Validate Compose file: It runs a quick syntax check (docker compose config --quiet) on your docker-compose.yml to make sure you didn't accidentally introduce a typo into your local testing setup.

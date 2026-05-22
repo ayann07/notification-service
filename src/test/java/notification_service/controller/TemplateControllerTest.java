@@ -15,12 +15,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.modelmapper.ModelMapper;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import notification_service.dto.TemplateRequestDTO;
 import notification_service.enums.DeliveryChannel;
@@ -41,12 +41,12 @@ class TemplateControllerTest {
     private TemplateService templateService;
 
     private MockMvc mockMvc;
-    private ObjectMapper objectMapper;
+    private JsonMapper jsonMapper;
 
     @BeforeEach
     void setUp() {
         TemplateController controller = new TemplateController(templateService, new ModelMapper());
-        objectMapper = new ObjectMapper();
+        jsonMapper = JsonMapper.builder().build();
 
         // We enable bean validation here so @Valid on the controller behaves the same
         // way it would inside the real application.
@@ -55,7 +55,7 @@ class TemplateControllerTest {
 
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler())
-                .setMessageConverters(new MappingJackson2HttpMessageConverter(objectMapper))
+                .setMessageConverters(new JacksonJsonHttpMessageConverter(jsonMapper))
                 .setValidator(validator)
                 .build();
     }
@@ -102,7 +102,7 @@ class TemplateControllerTest {
 
         mockMvc.perform(post("/templates")
                 .contentType(APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .content(jsonMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message").value("duplicate template"));
     }
@@ -119,7 +119,7 @@ class TemplateControllerTest {
         // Assert both the HTTP status and the field-level validation error payload.
         mockMvc.perform(post("/templates")
                 .contentType(APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .content(jsonMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Validation failed"))
                 .andExpect(jsonPath("$.validationErrors.eventType").exists())
@@ -140,7 +140,7 @@ class TemplateControllerTest {
 
         mockMvc.perform(put("/templates/ORDER_SHIPPED/EMAIL")
                 .contentType(APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
+                .content(jsonMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Path eventType must match request body eventType"));
     }

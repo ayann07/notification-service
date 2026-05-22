@@ -39,9 +39,6 @@ class IdempotencyCacheTest {
         // Create the real class we want to test, but inject mocked Redis
         // dependencies instead of a real Redis connection.
         idempotencyCache = new IdempotencyCache(redisTemplate);
-
-        // When the code asks Redis for "value operations", return our mocked helper.
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
     }
 
     @Test
@@ -55,6 +52,9 @@ class IdempotencyCacheTest {
     @Test
     void isDuplicateReturnsFalseForFirstTimeEvent() {
         // Arrange:
+        // When the code asks Redis for "value operations", return our mocked helper.
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+
         // Redis returns true from setIfAbsent(...) when it successfully creates the
         // key for the first time.
         when(valueOperations.setIfAbsent(eq("idem:key-1"), eq("1"), any(Duration.class))).thenReturn(true);
@@ -67,6 +67,9 @@ class IdempotencyCacheTest {
     @Test
     void isDuplicateReturnsTrueWhenRedisAlreadyHasKey() {
         // Arrange:
+        // When the code asks Redis for "value operations", return our mocked helper.
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+
         // Redis returns false from setIfAbsent(...) when the key already exists.
         when(valueOperations.setIfAbsent(eq("idem:key-1"), eq("1"), any(Duration.class))).thenReturn(false);
 

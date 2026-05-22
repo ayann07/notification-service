@@ -44,12 +44,6 @@ class UnreadCounterCacheTest {
         // --- ARRANGE (Common Setup) ---
         // We initialize the cache and inject our fake Redis template into it.
         unreadCounterCache = new UnreadCounterCache(redisTemplate);
-
-        // This is a crucial Mockito trick for chained methods!
-        // We are telling the fake redisTemplate: "If the code ever asks you for
-        // opsForValue(),
-        // don't return null. Return our fake valueOperations mock instead."
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
     }
 
     @Test
@@ -69,6 +63,7 @@ class UnreadCounterCacheTest {
     void incrementUsesUserSpecificRedisKey() {
         // --- ARRANGE ---
         UUID userId = UUID.randomUUID();
+        mockValueOperations();
 
         // --- ACT ---
         unreadCounterCache.increment(userId);
@@ -83,6 +78,7 @@ class UnreadCounterCacheTest {
     void decrementClampsCounterToZeroWhenRedisGoesNegative() {
         // --- ARRANGE ---
         UUID userId = UUID.randomUUID();
+        mockValueOperations();
 
         // Here we test an "edge case" (what happens when things go wrong).
         // We program our fake Redis to simulate a weird state: "When you decrement this
@@ -104,6 +100,7 @@ class UnreadCounterCacheTest {
     void resetWritesZeroToRedis() {
         // --- ARRANGE ---
         UUID userId = UUID.randomUUID();
+        mockValueOperations();
 
         // --- ACT ---
         unreadCounterCache.reset(userId);
@@ -118,6 +115,7 @@ class UnreadCounterCacheTest {
     void getUnreadCounterReturnsParsedValueOrZero() {
         // --- ARRANGE ---
         UUID userId = UUID.randomUUID();
+        mockValueOperations();
 
         // We program the mock to simulate a successful cache hit.
         // "When asked to get this specific key, return the string '7'."
@@ -130,5 +128,11 @@ class UnreadCounterCacheTest {
         // Test 2: Ensure that passing a null ID safely returns 0L instead of crashing
         // with a NullPointerException.
         assertEquals(0L, unreadCounterCache.getUnreadCounter(null));
+    }
+
+    private void mockValueOperations() {
+        // This is a crucial Mockito trick for chained methods.
+        // We only stub it in tests that actually reach Redis operations.
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
     }
 }

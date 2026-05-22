@@ -3,17 +3,16 @@ package notification_service.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Optional;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.modelmapper.ModelMapper;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -34,11 +33,15 @@ class TemplateServiceTest {
     @Mock
     private NotificationTemplateRepository templateRepository;
 
-    @Mock
     private ModelMapper modelMapper;
 
-    @InjectMocks
     private TemplateService templateService;
+
+    @BeforeEach
+    void setUp() {
+        modelMapper = new ModelMapper();
+        templateService = new TemplateService(templateRepository, modelMapper);
+    }
 
     @Test
     void createTemplateSavesWhenNoDuplicateExists() {
@@ -110,25 +113,20 @@ class TemplateServiceTest {
     void updateTemplateReturnsMappedResponseForMatchingIdentity() {
         TemplateRequestDTO request = request();
         NotificationTemplate existing = template();
-        TemplateResponseDTO response = TemplateResponseDTO.builder()
-                .eventType("ORDER_SHIPPED")
-                .deliveryChannel(DeliveryChannel.EMAIL)
-                .title("Order shipped")
-                .body("Updated body")
-                .defaultPriority(3)
-                .build();
-
         when(templateRepository.findByEventTypeAndDeliveryChannel("ORDER_SHIPPED", DeliveryChannel.EMAIL))
                 .thenReturn(Optional.of(existing));
         when(templateRepository.save(existing)).thenReturn(existing);
-        when(modelMapper.map(eq(existing), eq(TemplateResponseDTO.class))).thenReturn(response);
 
         // When the path identity and body identity match, update should proceed and
         // return the mapped response DTO.
         TemplateResponseDTO updated = templateService.updateTemplate("ORDER_SHIPPED", DeliveryChannel.EMAIL, request);
 
-        assertEquals(response, updated);
-        verify(modelMapper).map(request, existing);
+        assertEquals("ORDER_SHIPPED", updated.getEventType());
+        assertEquals(DeliveryChannel.EMAIL, updated.getDeliveryChannel());
+        assertEquals("Order shipped", updated.getTitle());
+        assertEquals("Your order is on the way", updated.getBody());
+        assertEquals(3, updated.getDefaultPriority());
+        verify(templateRepository).save(existing);
     }
 
     @Test

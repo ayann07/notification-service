@@ -7,6 +7,7 @@ on:
       - main
       - master
   pull_request:
+  workflow_dispatch:
 
 permissions:
   # A security best practice. It gives the pipeline read-only access to your code, meaning a hacker couldn't use this pipeline to maliciously modify your repository.
@@ -18,11 +19,78 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  test:
-    name: Test and Package
+  unit-test:
+    name: Unit Test and Package
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    # This is GitHub Actions' built-in version of Docker Compose. Before it even looks at your Java code, it boots up three containers specifically for your integration tests:
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          # Downloads your code and installs Java 21 (Temurin). It also caches Maven dependencies to speed up future runs.
+
+      - name: Make Maven wrapper executable
+        run: chmod +x mvnw
+
+      - name: Run tests
+        run: ./mvnw -B test
+        # Runs fast unit/controller/service tests only. Full Spring context tests are named *IT and run in the integration job.
+
+      - name: Package application
+        run: ./mvnw -B -DskipTests package
+        # Once tests pass, it runs ./mvnw package to compile your code into an app.jar file.
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: notification-service-jar
+          path: target/*.jar
+          if-no-files-found: error
+          retention-days: 7
+        # It grabs that .jar file and saves it to the GitHub servers for 7 days. You can download it directly from the Actions tab if you want to inspect it.
+
+  docker:
+    name: Docker Image
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: unit-test
+    # It waits for the Java tests to pass. If the Java code is broken, it won't even bother trying to build the Docker container.
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: notification-service:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          # cache-to: type=gha:It saves the Docker build layers directly into GitHub Actions' cache, making tomorrow's builds run significantly faster.
+
+      - name: Validate Compose file
+        run: docker compose config --quiet
+        # Validate Compose file: It runs a quick syntax check (docker compose config --quiet) on your docker-compose.yml to make sure you didn't accidentally introduce a typo into your local testing setup.
+
+  integration-test:
+    name: Integration Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: unit-test
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    # Heavier tests boot real infrastructure, so they run after merge/main pushes or when triggered manually.
     services:
       postgres:
         image: postgres:15-alpine
@@ -83,15 +151,14 @@ jobs:
           distribution: temurin
           java-version: "21"
           cache: maven
-          # Downloads your code and installs Java 21 (Temurin). It also caches Maven dependencies to speed up future runs.
 
       - name: Make Maven wrapper executable
         run: chmod +x mvnw
 
-      - name: Run tests
-        run: ./mvnw -B test
+      - name: Run integration tests
+        run: ./mvnw -B verify -Pintegration
         env:
-          # CI uses dummy provider credentials only so the Spring context can start.
+          # Integration CI uses dummy provider credentials only so the Spring context can start.
           # Do not put real secrets in this file; use GitHub Actions secrets in deployment workflows.
           DB_USERNAME: admin
           DB_PASSWORD: admin
@@ -107,46 +174,3 @@ jobs:
           TWILIO_FROM_NUMBER: "+10000000000"
           JWT_SECRET: replace-this-ci-secret-with-a-long-random-value
           JWT_ISSUER: notification-service-ci
-        
-        # It passes in a block of env: variables pointing to localhost (because GitHub Actions maps those services directly to the runner's localhost) and uses dummy tokens for AWS and Twilio so the tests don't send real emails or text messages.
-
-      - name: Package application
-        run: ./mvnw -B -DskipTests package
-        # Once tests pass, it runs ./mvnw package to compile your code into an app.jar file.
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: notification-service-jar
-          path: target/*.jar
-          if-no-files-found: error
-          retention-days: 7
-        # It grabs that .jar file and saves it to the GitHub servers for 7 days. You can download it directly from the Actions tab if you want to inspect it.
-
-  docker:
-    name: Docker Image
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: test
-    # It waits for the Java tests to pass. If the Java code is broken, it won't even bother trying to build the Docker container.
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: false
-          tags: notification-service:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          # cache-to: type=gha:It saves the Docker build layers directly into GitHub Actions' cache, making tomorrow's builds run significantly faster.
-
-      - name: Validate Compose file
-        run: docker compose config --quiet
-        # Validate Compose file: It runs a quick syntax check (docker compose config --quiet) on your docker-compose.yml to make sure you didn't accidentally introduce a typo into your local testing setup.

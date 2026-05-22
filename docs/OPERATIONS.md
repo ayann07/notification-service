@@ -46,25 +46,36 @@ It runs on:
 - pushes to `master`
 - pull requests
 
-The pipeline has two jobs.
+The pipeline has three jobs.
 
-## Test And Package
+## Unit Test And Package
 
 This job:
 
 1. checks out the repository
 2. installs Java 21
 3. caches Maven dependencies
-4. starts PostgreSQL, Redis, and Kafka service containers
-5. runs `./mvnw -B test`
-6. runs `./mvnw -B -DskipTests package`
-7. uploads the built jar as a short-lived artifact
+4. runs `./mvnw -B test`
+5. runs `./mvnw -B -DskipTests package`
+6. uploads the built jar as a short-lived artifact
 
-Provider credentials in CI are dummy values. They exist only so the Spring context can start without putting real secrets in the repository.
+This is the fast PR gate. Tests named `*Test` should be deterministic unit, service, controller, and messaging tests that do not require real infrastructure.
+
+## Integration Test
+
+This job runs after unit tests on pushes to `main` or `master`, and when the workflow is triggered manually.
+
+It:
+
+1. starts PostgreSQL, Redis, Zookeeper, and Kafka service containers
+2. runs `./mvnw -B verify -Pintegration`
+3. executes tests named `*IT`
+
+Provider credentials in integration CI are dummy values. They exist only so the Spring context can start without putting real secrets in the repository.
 
 ## Docker Image
 
-This job runs only after tests pass.
+This job runs only after unit tests pass.
 
 It:
 
@@ -74,3 +85,10 @@ It:
 4. validates the compose file with `docker compose config --quiet`
 
 This is CI, not deployment. No registry push or production release happens yet.
+
+## Test Naming
+
+Use this convention:
+
+- `*Test` for fast tests that run on every pull request
+- `*IT` for heavier integration tests that need real infrastructure

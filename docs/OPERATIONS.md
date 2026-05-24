@@ -73,6 +73,8 @@ It:
 
 Provider credentials in integration CI are dummy values. They exist only so the Spring context can start without putting real secrets in the repository.
 
+The current integration test boots the real application, creates a template through the secured HTTP API, publishes a notification event through Kafka, waits for the consumer to process it, and verifies the hydrated notification in PostgreSQL. External delivery is spied so CI does not call AWS SES.
+
 ## Docker Image
 
 This job runs only after unit tests pass.

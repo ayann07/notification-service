@@ -16,6 +16,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.resttestclient.TestRestTemplate;
@@ -40,6 +41,7 @@ import notification_service.repository.NotificationRepository;
 import notification_service.security.JwtTokenService;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureTestRestTemplate
 class ApplicationIT {
     // Full-stack integration test:
     // HTTP + Spring Security + Kafka + Redis idempotency/rate-limit state +

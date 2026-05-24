@@ -53,6 +53,8 @@ public class SecurityConfig {
                         // Swagger/OpenAPI docs are left open so the API can still be
                         // explored easily.
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        // Kubernetes and load balancers use this for health checks.
+                        .requestMatchers("/actuator/health/**").permitAll()
                         // Dev token issuing is open only because the controller itself is
                         // restricted to the dev/local profile.
                         .requestMatchers("/api/v1/dev-auth/**").permitAll()

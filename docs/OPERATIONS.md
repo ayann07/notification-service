@@ -88,6 +88,8 @@ It:
 
 This is CI, not deployment. No registry push or production release happens yet.
 
+CD is handled separately in `.github/workflows/cd.yml`. It builds the image, pushes it to Amazon ECR, and updates the Kubernetes deployment in EKS. See [KUBERNETES.md](KUBERNETES.md).
+
 ## Test Naming
 
 Use this convention:
